@@ -1,0 +1,5 @@
+# Exclude computed data
+**/out_*.dat
+
+#Exclude built binary
+fdtd
