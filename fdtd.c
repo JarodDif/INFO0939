@@ -802,9 +802,9 @@ void update_pressure(simulation_data_t *simdata) {
   const int numnodesy = NUMNODESY(simdata->pold);
   const int numnodesz = NUMNODESZ(simdata->pold);
 
-  for (int m = 0; m < numnodesx; m++) {
+  for (int p = 0; p < numnodesz; p++) {
     for (int n = 0; n < numnodesy; n++) {
-      for (int p = 0; p < numnodesz; p++) {
+      for (int m = 0; m < numnodesx; m++) {
         double c = GETVALUE(simdata->c, m, n, p);
         double rho = GETVALUE(simdata->rho, m, n, p);
 
@@ -834,9 +834,9 @@ void update_velocities(simulation_data_t *simdata) {
   const int numnodesy = NUMNODESY(simdata->vxold);
   const int numnodesz = NUMNODESZ(simdata->vxold);
 
-  for (int m = 0; m < numnodesx; m++) {
+  for (int p = 0; p < numnodesz; p++) {
     for (int n = 0; n < numnodesy; n++) {
-      for (int p = 0; p < numnodesz; p++) {
+      for (int m = 0; m < numnodesx; m++) {
         int mp1 = MIN(numnodesx - 1, m + 1);
         int np1 = MIN(numnodesy - 1, n + 1);
         int pp1 = MIN(numnodesz - 1, p + 1);
