@@ -3,3 +3,4 @@
 
 #Exclude built binary
 fdtd
+fdtd_*

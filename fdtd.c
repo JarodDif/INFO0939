@@ -115,9 +115,9 @@ void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy,
 double trilinear_interpolation(data_t *data, double x, double y, double z) {
   //TODO: argue to what we do
   //Compute all needed values
-  double m = (double)((x - XMIN(data)) / (XMAX(data) - XMIN(data)) * NUMNODESX(data));
-  double n = (double)((y - YMIN(data)) / (YMAX(data) - YMIN(data)) * NUMNODESY(data));
-  double p = (double)((z - ZMIN(data)) / (ZMAX(data) - ZMIN(data)) * NUMNODESZ(data));
+  double m = (x - XMIN(data)) / (XMAX(data) - XMIN(data)) * (NUMNODESX(data)-1);
+  double n = (y - YMIN(data)) / (YMAX(data) - YMIN(data)) * (NUMNODESY(data)-1);
+  double p = (z - ZMIN(data)) / (ZMAX(data) - ZMIN(data)) * (NUMNODESZ(data)-1);
 
   register int m0 = (int)m, n0 = (int)n, p0 = (int)p;
   m0 = (m0 < 0) ? 0 : (m0 > NUMNODESX(data) - 1) ? NUMNODESX(data) - 1 : m0;
