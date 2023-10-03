@@ -124,28 +124,36 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {    
   int n0 = (int)n;
   int p0 = (int)p;
 
-  double c000 = GETVALUE(data, m0    , n0    , p0    );                                 //? change order to match following ops ?
-  double c001 = GETVALUE(data, m0    , n0    , p0 + 1);
-  double c010 = GETVALUE(data, m0    , n0 + 1, p0    );
-  double c011 = GETVALUE(data, m0    , n0 + 1, p0 + 1);
-  double c100 = GETVALUE(data, m0 + 1, n0    , p0    );
-  double c101 = GETVALUE(data, m0 + 1, n0    , p0 + 1);
-  double c110 = GETVALUE(data, m0 + 1, n0 + 1, p0    );
-  double c111 = GETVALUE(data, m0 + 1, n0 + 1, p0 + 1);
+  double c[]  = {
+    GETVALUE(data, m0    , n0    , p0    ),
+    GETVALUE(data, m0    , n0    , p0 + 1),
+    GETVALUE(data, m0    , n0 + 1, p0    ),
+    GETVALUE(data, m0    , n0 + 1, p0 + 1),
+    GETVALUE(data, m0 + 1, n0    , p0    ),
+    GETVALUE(data, m0 + 1, n0    , p0 + 1),
+    GETVALUE(data, m0 + 1, n0 + 1, p0    ),
+    GETVALUE(data, m0 + 1, n0 + 1, p0 + 1)
+  };
 
-  register double dm = m - m0;
-  double c00 = c000 * (1 - dm) + c100 * dm;
-  double c01 = c001 * (1 - dm) + c101 * dm;
-  double c10 = c010 * (1 - dm) + c110 * dm;
-  double c11 = c011 * (1 - dm) + c111 * dm;
+  double dm = m - m0;
 
-  register double dn = n - n0;
-  double c0 = c00 * (1 - dn) + c10 * dn;
-  double c1 = c01 * (1 - dn) + c11 * dn;
+  double cp[] = {
+    c[0] * (1 - dm) + c[4] * dm,
+    c[1] * (1 - dm) + c[5] * dm,
+    c[2] * (1 - dm) + c[6] * dm,
+    c[3] * (1 - dm) + c[7] * dm
+  };
 
-  register double dp = p - p0;                                                          //? Abusive use of register ?
+  double dn = n - n0;
 
-  return c0 * (1 - dp) + c1 * dp;
+  double cpp[] = {
+    cp[0] * (1 - dn) + cp[2] * dn,
+    cp[1] * (1 - dn) + cp[3] * dn
+  };
+
+  double dp = p - p0;
+
+  return cpp[0] * (1 - dp) + cpp[1] * dp;
 }
 
 void print_source(source_t *source) {
