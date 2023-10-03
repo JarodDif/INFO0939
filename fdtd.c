@@ -116,14 +116,15 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {    
 
   register grid_t *grid = &data->grid;
 
-  double m = (double)((x - grid->xmin) / (grid->xmax - grid->xmin) * grid->numnodesx);
-  double n = (double)((y - grid->ymin) / (grid->ymax - grid->ymin) * grid->numnodesy);
-  double p = (double)((z - grid->zmin) / (grid->zmax - grid->zmin) * grid->numnodesz);
+  //Compute all needed values
+  double m = (double)((x - XMIN(dat)) / (XMAX(dat) - XMIN(dat)) * grid->numnodesx);
+  double n = (double)((y - YMIN(dat)) / (grid->ymax - grid->ymin) * grid->numnodesy);
+  double p = (double)((z - ZMIN(dat)) / (grid->zmax - grid->zmin) * grid->numnodesz);
 
-  int m0 = (int)m;                                                                      //? Better to store and call or cast each time ?
-  int n0 = (int)n;
-  int p0 = (int)p;
+  int m0 = (int)m, n0 = (int)n, p0 = (int)p;
+  double dm = m - m0, dn = n - n0, dp = p - p0;
 
+  //Get all the values at the vertices of the cube
   double c[]  = {
     GETVALUE(data, m0    , n0    , p0    ),
     GETVALUE(data, m0    , n0    , p0 + 1),
@@ -135,25 +136,18 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {    
     GETVALUE(data, m0 + 1, n0 + 1, p0 + 1)
   };
 
-  double dm = m - m0;
+  //reduce to cube to square
+  for(int i=0; i < 4; i++){
+    c[i] = c[i] * (1 - dm) + c[i+4] * dm;
+  }
 
-  double cp[] = {
-    c[0] * (1 - dm) + c[4] * dm,
-    c[1] * (1 - dm) + c[5] * dm,
-    c[2] * (1 - dm) + c[6] * dm,
-    c[3] * (1 - dm) + c[7] * dm
-  };
+  //reduce square to line 
+  for(int i=0; i < 2; i++){
+    c[i] = c[i] * (1 - dn) + c[i+2] * dn
+  }
 
-  double dn = n - n0;
-
-  double cpp[] = {
-    cp[0] * (1 - dn) + cp[2] * dn,
-    cp[1] * (1 - dn) + cp[3] * dn
-  };
-
-  double dp = p - p0;
-
-  return cpp[0] * (1 - dp) + cpp[1] * dp;
+  //reduce line to point
+  return c[0] * (1 - dp) + c[1] * dp;
 }
 
 void print_source(source_t *source) {
