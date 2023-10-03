@@ -120,9 +120,10 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {
   double p = (double)((z - ZMIN(data)) / (ZMAX(data) - ZMIN(data)) * NUMNODESZ(data));
 
   register int m0 = (int)m, n0 = (int)n, p0 = (int)p;
+  m0 = (m0 < 0) ? 0 : (m0 > NUMNODESX(data) - 1) ? NUMNODESX(data) - 1 : m0;
+  n0 = (n0 < 0) ? 0 : (n0 > NUMNODESY(data) - 1) ? NUMNODESY(data) - 1 : n0;
+  p0 = (p0 < 0) ? 0 : (p0 > NUMNODESZ(data) - 1) ? NUMNODESZ(data) - 1 : p0;
   register double dm = m - m0, dn = n - n0, dp = p - p0;
-
-  if(m0 < 0) m0 = 0; if(n0 < 0) n0 = 0; if(p0 < 0) p0 = 0;
 
   double c[8];
 
