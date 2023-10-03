@@ -207,8 +207,24 @@ char *copy_string(char *str);
  * @param cy [OUT] the closest y index
  * @param cz [OUT] the closest z index
  */
-void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy,
-                   int *cz);
+void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy, int *cz);
+
+
+/**
+ * @brief Returns the values at a given point by using trilinear
+ *        interpolation within the 3D mesh.
+ * 
+ * @param grid [IN] the computational grid
+ * @param x [IN] the x coordinate
+ * @param y [IN] the y coordinate
+ * @param z [IN] the z coordinate
+ * @param cx [OUT] the closest x index
+ * @param cy [OUT] the closest y index
+ * @param cz [OUT] the closest z index
+ * 
+ * @return double the interpolated value
+*/
+double trilinear_interpolation(data_t *data, double x, double y, double z);
 
 /**
  * @brief Print information about the source object passed in argument

@@ -112,6 +112,42 @@ void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy,
   *cz = (p < 0) ? 0 : (p > grid->numnodesz - 1) ? grid->numnodesz - 1 : p;
 }
 
+double trilinear_interpolation(data_t *data, double x, double y, double z) {            //todo : out of bonds
+
+  register grid_t *grid = &data->grid;
+
+  double m = (double)((x - grid->xmin) / (grid->xmax - grid->xmin) * grid->numnodesx);
+  double n = (double)((y - grid->ymin) / (grid->ymax - grid->ymin) * grid->numnodesy);
+  double p = (double)((z - grid->zmin) / (grid->zmax - grid->zmin) * grid->numnodesz);
+
+  int m0 = (int)m;                                                                      //? Better to store and call or cast each time ?
+  int n0 = (int)n;
+  int p0 = (int)p;
+
+  double c000 = GETVALUE(data, m0    , n0    , p0    );                                 //? change order to match following ops ?
+  double c001 = GETVALUE(data, m0    , n0    , p0 + 1);
+  double c010 = GETVALUE(data, m0    , n0 + 1, p0    );
+  double c011 = GETVALUE(data, m0    , n0 + 1, p0 + 1);
+  double c100 = GETVALUE(data, m0 + 1, n0    , p0    );
+  double c101 = GETVALUE(data, m0 + 1, n0    , p0 + 1);
+  double c110 = GETVALUE(data, m0 + 1, n0 + 1, p0    );
+  double c111 = GETVALUE(data, m0 + 1, n0 + 1, p0 + 1);
+
+  register double dm = m - m0;
+  double c00 = c000 * (1 - dm) + c100 * dm;
+  double c01 = c001 * (1 - dm) + c101 * dm;
+  double c10 = c010 * (1 - dm) + c110 * dm;
+  double c11 = c011 * (1 - dm) + c111 * dm;
+
+  register double dn = n - n0;
+  double c0 = c00 * (1 - dn) + c10 * dn;
+  double c1 = c01 * (1 - dn) + c11 * dn;
+
+  register double dp = p - p0;                                                          //? Abusive use of register ?
+
+  return c0 * (1 - dp) + c1 * dp;
+}
+
 void print_source(source_t *source) {
   printf(" Source infos:\n\n");
 
