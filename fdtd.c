@@ -112,29 +112,26 @@ void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy,
   *cz = (p < 0) ? 0 : (p > grid->numnodesz - 1) ? grid->numnodesz - 1 : p;
 }
 
-double trilinear_interpolation(data_t *data, double x, double y, double z) {            //todo : out of bonds
-
-  register grid_t *grid = &data->grid;
-
+double trilinear_interpolation(data_t *data, double x, double y, double z) {
+  //TODO: argue to what we do
   //Compute all needed values
-  double m = (double)((x - XMIN(dat)) / (XMAX(dat) - XMIN(dat)) * grid->numnodesx);
-  double n = (double)((y - YMIN(dat)) / (grid->ymax - grid->ymin) * grid->numnodesy);
-  double p = (double)((z - ZMIN(dat)) / (grid->zmax - grid->zmin) * grid->numnodesz);
+  double m = (double)((x - XMIN(data)) / (XMAX(data) - XMIN(data)) * NUMNODESX(data));
+  double n = (double)((y - YMIN(data)) / (YMAX(data) - YMIN(data)) * NUMNODESY(data));
+  double p = (double)((z - ZMIN(data)) / (ZMAX(data) - ZMIN(data)) * NUMNODESZ(data));
 
-  int m0 = (int)m, n0 = (int)n, p0 = (int)p;
-  double dm = m - m0, dn = n - n0, dp = p - p0;
+  register int m0 = (int)m, n0 = (int)n, p0 = (int)p;
+  register double dm = m - m0, dn = n - n0, dp = p - p0;
 
-  //Get all the values at the vertices of the cube
-  double c[]  = {
-    GETVALUE(data, m0    , n0    , p0    ),
-    GETVALUE(data, m0    , n0    , p0 + 1),
-    GETVALUE(data, m0    , n0 + 1, p0    ),
-    GETVALUE(data, m0    , n0 + 1, p0 + 1),
-    GETVALUE(data, m0 + 1, n0    , p0    ),
-    GETVALUE(data, m0 + 1, n0    , p0 + 1),
-    GETVALUE(data, m0 + 1, n0 + 1, p0    ),
-    GETVALUE(data, m0 + 1, n0 + 1, p0 + 1)
-  };
+  if(m0 < 0) m0 = 0; if(n0 < 0) n0 = 0; if(p0 < 0) p0 = 0;
+
+  double c[8];
+
+  for(int i=0; i < 8; i++){
+    c[i] = GETVALUE(data, 
+      (m0 != NUMNODESX(data)-1 && i&4)?(m0+1):m0,
+      (n0 != NUMNODESY(data)-1 && i&2)?(n0+1):n0,
+      (p0 != NUMNODESZ(data)-1 && i&1)?(p0+1):p0);
+  }
 
   //reduce to cube to square
   for(int i=0; i < 4; i++){
@@ -143,7 +140,7 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {    
 
   //reduce square to line 
   for(int i=0; i < 2; i++){
-    c[i] = c[i] * (1 - dn) + c[i+2] * dn
+    c[i] = c[i] * (1 - dn) + c[i+2] * dn;
   }
 
   //reduce line to point
@@ -250,9 +247,9 @@ void fill_data(data_t *data, double value) {
     return;
   }
 
-  for (int m = 0; m < NUMNODESX(data); m++) {
+  for (int p = 0; p < NUMNODESZ(data); p++) {
     for (int n = 0; n < NUMNODESY(data); n++) {
-      for (int p = 0; p < NUMNODESZ(data); p++) {
+      for (int m = 0; m < NUMNODESX(data); m++) {
         SETVALUE(data, m, n, p, value);
       }
     }
@@ -782,26 +779,22 @@ int interpolate_inputmaps(simulation_data_t *simdata, grid_t *simgrid,
   double dx = simdata->params.dx;
   double dxd2 = simdata->params.dx / 2;
 
-  for (int m = 0; m < simgrid->numnodesx; m++) {
+  for (int p = 0; p < simgrid->numnodesz; p++) {
     for (int n = 0; n < simgrid->numnodesy; n++) {
-      for (int p = 0; p < simgrid->numnodesz; p++) {
+      for (int m = 0; m < simgrid->numnodesx; m++) {
 
         double x = m * dx;
         double y = n * dx;
         double z = p * dx;
 
-        int mc, nc, pc;
-        closest_index(&cin->grid, x, y, z, &mc, &nc, &pc);
-
-        SETVALUE(simdata->c, m, n, p, GETVALUE(cin, mc, nc, pc));
-        SETVALUE(simdata->rho, m, n, p, GETVALUE(rhoin, mc, nc, pc));
+        SETVALUE(simdata->c, m,n,p, trilinear_interpolation(cin, x,y,z));
+        SETVALUE(simdata->rho, m,n,p, trilinear_interpolation(rhoin, x,y,z));
 
         x += dxd2;
         y += dxd2;
         z += dxd2;
 
-        closest_index(&rhoin->grid, x, y, z, &mc, &nc, &pc);
-        SETVALUE(simdata->rhohalf, m, n, p, GETVALUE(rhoin, mc, nc, pc));
+        SETVALUE(simdata->rhohalf, m,n,p, trilinear_interpolation(rhoin, x,y,z));
       }
     }
   }
