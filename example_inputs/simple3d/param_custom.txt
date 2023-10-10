@@ -1,6 +1,6 @@
 1e-2
 0.5e-6
-0.001
+0.002
 200
 in_c_custom.dat
 in_rho_3d.dat
