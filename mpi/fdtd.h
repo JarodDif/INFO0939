@@ -1,6 +1,11 @@
-#pragma once
+#ifndef _FDTD_H_
+#define _FDTD_H_
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <time.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -77,6 +82,15 @@
 #define GET_TIME() ((double)clock() / CLOCKS_PER_SEC)
 
 #endif
+
+typedef enum neighbor {
+  LEFT  = 0,
+  RIGHT = 1,
+  FRONT = 2,
+  BACK  = 3,
+  DOWN  = 4,
+  UP    = 5,
+} neighbor_t;
 
 typedef enum source_type {
   SINE = 0,
@@ -197,12 +211,23 @@ typedef struct simulation_data {
 
   data_t *c, *rho, *rhohalf;
 
+  process_data_t *pold, *pnew;
+  process_data_t *vxold, *vxnew;
+  process_data_t *vyold, *vynew;
+  process_data_t *vzold, *vznew;
+
+} simulation_data_t;
+
+typedef struct process_simulation_data{
+  parameters_t params;
+
+  data_t *c, *rho, *rhohalf;
+
   data_t *pold, *pnew;
   data_t *vxold, *vxnew;
   data_t *vyold, *vynew;
   data_t *vzold, *vznew;
-
-} simulation_data_t;
+} process_simulation_data_t;
 
 const char *source_type_keywords[] = {[SINE] = "sine", [AUDIO] = "audio"};
 
@@ -479,7 +504,7 @@ void update_velocities(simulation_data_t *simdata);
  * used during the simulation
  * @param params_filename [IN] a path to a parameter file to read
  */
-void init_simulation(simulation_data_t *simdata, const char *params_filename);
+void init_simulation(process_simulation_data_t *simdata, const char *params_filename);
 
 /**
  * @brief Finalize the simulation by deallocating the data used for the
@@ -488,7 +513,7 @@ void init_simulation(simulation_data_t *simdata, const char *params_filename);
  * @param simdata [INOUT] a simulation data object describing the simulation to
  * finalize
  */
-void finalize_simulation(simulation_data_t *simdata);
+void finalize_simulation(process_simulation_data_t *simdata);
 
 /**
  * @brief Swap the time steps data, i.e., make the new time step the old one
@@ -497,3 +522,4 @@ void finalize_simulation(simulation_data_t *simdata);
  */
 void swap_timesteps(simulation_data_t *simdata);
 
+#endif
