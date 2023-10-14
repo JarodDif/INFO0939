@@ -4,5 +4,5 @@
 #Exclude built binary
 fdtd
 fdtd_*
-data2gmsh
+data2gmsh/data2gmsh
 
