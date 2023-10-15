@@ -85,6 +85,7 @@ typedef enum neighbor {
   BACK  = 3,
   DOWN  = 4,
   UP    = 5,
+  NEIGHBOR_TYPE_END = 6;
 } neighbor_t;
 
 typedef enum source_type {
@@ -206,22 +207,22 @@ typedef struct simulation_data {
 
   data_t *c, *rho, *rhohalf;
 
-  process_data_t *pold, *pnew;
-  process_data_t *vxold, *vxnew;
-  process_data_t *vyold, *vynew;
-  process_data_t *vzold, *vznew;
+  data_t *pold, *pnew;
+  data_t *vxold, *vxnew;
+  data_t *vyold, *vynew;
+  data_t *vzold, *vznew;
 
 } simulation_data_t;
 
 typedef struct process_simulation_data{
   parameters_t params;
 
-  data_t *c, *rho, *rhohalf;
+  process_data_t *c, *rho, *rhohalf;
 
-  data_t *pold, *pnew;
-  data_t *vxold, *vxnew;
-  data_t *vyold, *vynew;
-  data_t *vzold, *vznew;
+  process_data_t *pold, *pnew;
+  process_data_t *vxold, *vxnew;
+  process_data_t *vyold, *vynew;
+  process_data_t *vzold, *vznew;
 } process_simulation_data_t;
 
 const char *source_type_keywords[] = {[SINE] = "sine", [AUDIO] = "audio"};
@@ -295,6 +296,28 @@ void print_source(source_t *source);
  */
 void print_output(output_t *output);
 
+/**
+ * @brief Set a value in a data field belonging to the running process
+ *
+ * @param pdata [IN] the data field in which to set the value
+ * @param m [IN] the first index
+ * @param n [IN] the second index
+ * @param p [IN] the third index
+ * @param val [IN] the value in question
+ * @return int 0 if setting was a success, returns 1 otherwise
+ */
+int process_setvalue(process_data_t *pdata, int m, int n, int p, double val);
+
+/**
+ * @brief Get a value from a data field belonging to the running process
+ *
+ * @param pdata [IN] the data field from which to get the value
+ * @param m [IN] the first index
+ * @param n [IN] the second index
+ * @param p [IN] the third index
+ * @return double the value in question in case of success, 0.0 otherwise       //? 0.0 otherwise
+ */
+double process_getvalue(process_data_t *pdata, int m, int n, int p);
 /******************************************************************************
  * Data functions                                                             *
  ******************************************************************************/
@@ -315,6 +338,15 @@ data_t *allocate_data(grid_t *grid);
  * @param value [IN] the value used to fill the array
  */
 void fill_data(data_t *data, double value);
+
+/**
+ * @brief Allocate a new process_data object, the 3d array to store values as
+ *        well as the storage needed for ghost cells according to the given grid
+ * 
+ * @param grid [IN] the grid describing the 3D array to allocate
+ * @return process_data_t* return a new process_data object or NULL if allocation failed
+*/
+process_data_t *allocate_pdata(process_grid_t *grid);
 
 /******************************************************************************
  * Data file functions                                                        *
@@ -465,39 +497,16 @@ void apply_source(simulation_data_t *simdata, int step);
  * @brief Interpolate the input density and spped maps so that they corresponds
  * to the simulation grid
  *
- * @param simdata [OUT] a simulation data object used to store the interpolated
+ * @param psimdata [OUT] a simulation data object used to store the interpolated
  * values that will be used during the simulation
- * @param simgrid [IN] the simulation grid, i.e., the grid to which the input
+ * @param psimgrid [IN] the simulation grid, i.e., the grid to which the input
  * data will be converted to
  * @param cin [IN] the input speed map
  * @param rhoin [IN] the input density map
  * @return int 0 if read was a success, returns 1 otherwise
  */
-int interpolate_inputmaps(simulation_data_t *simdata, grid_t *simgrid,
+int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *psimgrid,
                           data_t *cin, data_t *rhoin);
-
-/**
- * @brief Set a value in a data field belonging to the running process
- *
- * @param pdata [IN] the data field in which to set the value
- * @param m [IN] the first index
- * @param n [IN] the second index
- * @param p [IN] the third index
- * @param val [IN] the value in question
- * @return int 0 if setting was a success, returns 1 otherwise
- */
-int process_setvalue(process_data_t *pdata, int m, int n, int p, double val);
-
-/**
- * @brief Get a value from a data field belonging to the running process
- *
- * @param pdata [IN] the data field from which to get the value
- * @param m [IN] the first index
- * @param n [IN] the second index
- * @param p [IN] the third index
- * @return double the value in question in case of success, 0.0 otherwise       //? 0.0 otherwise
- */
-double process_getvalue(process_data_t *pdata, int m, int n, int p);
 
 /**
  * @brief Perform the pressure update step
@@ -536,8 +545,8 @@ void finalize_simulation(process_simulation_data_t *simdata);
 /**
  * @brief Swap the time steps data, i.e., make the new time step the old one
  *
- * @param simdata [INOUT] a simulation data object describing the simulation
+ * @param psimdata [INOUT] a simulation data object describing the simulation
  */
-void swap_timesteps(simulation_data_t *simdata);
+void swap_timesteps(process_simulation_data_t *psimdata);
 
 #endif

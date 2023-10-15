@@ -113,7 +113,6 @@ void closest_index(grid_t *grid, double x, double y, double z, int *cx, int *cy,
 }
 
 double trilinear_interpolation(data_t *data, double x, double y, double z) {
-  //TODO: argue to what we do
   //Compute all needed values
   double m = (x - XMIN(data)) / (XMAX(data) - XMIN(data)) * (NUMNODESX(data)-1);
   double n = (y - YMIN(data)) / (YMAX(data) - YMIN(data)) * (NUMNODESY(data)-1);
@@ -433,9 +432,9 @@ int write_output(output_t *output, data_t *data, int step, double time) {
 
   data_t *tmpdata = allocate_data(&output->grid);
 
-  for (m = startm; m < endm; m++) {
+  for (p = startp; p < endp; p++) {
     for (n = startn; n < endn; n++) {
-      for (p = startp; p < endp; p++) {
+      for (m = startm; m < endm; m++) {
         int tmpm = m - startm;
         int tmpn = n - startn;
         int tmpp = p - startp;
