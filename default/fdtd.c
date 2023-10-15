@@ -765,8 +765,8 @@ int read_paramfile(parameters_t *params, const char *filename) {
 
 int interpolate_inputmaps(simulation_data_t *simdata, grid_t *simgrid,
                           data_t *cin, data_t *rhoin) {
-  if (simdata == NULL || cin == NULL) {
-    DEBUG_PRINT("Invalid NULL simdata or cin");
+  if (simdata == NULL || cin == NULL || rhoin == NULL) {
+    DEBUG_PRINT("Invalid NULL simdata or cin or rhoin");
     return 1;
   }
 

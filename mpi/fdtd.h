@@ -53,11 +53,6 @@
 #define INDEX3D(grid, m, n, p)                                                 \
   ((size_t)grid.numnodesy * grid.numnodesx * (p) + grid.numnodesx * (n) + (m))
 
-#define GETVALUE(dat, m, n, p) ((dat)->vals[INDEX3D((dat)->grid, m, n, p)])
-#define SETVALUE(dat, m, n, p, val)                                            \
-  ((dat)->vals[INDEX3D((dat)->grid, m, n, p)] = (val))
-
-
 // custom process_data_t MACROS 
 #define PNUMNODESX(pdat) ((pdat)->grid.endm - (pdat)->grid.startm + 1)
 #define PNUMNODESY(pdat) ((pdat)->grid.endn - (pdat)->grid.startn + 1)
@@ -480,6 +475,29 @@ void apply_source(simulation_data_t *simdata, int step);
  */
 int interpolate_inputmaps(simulation_data_t *simdata, grid_t *simgrid,
                           data_t *cin, data_t *rhoin);
+
+/**
+ * @brief Set a value in a data field belonging to the running process
+ *
+ * @param pdata [IN] the data field in which to set the value
+ * @param m [IN] the first index
+ * @param n [IN] the second index
+ * @param p [IN] the third index
+ * @param val [IN] the value in question
+ * @return int 0 if setting was a success, returns 1 otherwise
+ */
+int process_setvalue(process_data_t *pdata, int m, int n, int p, double val);
+
+/**
+ * @brief Get a value from a data field belonging to the running process
+ *
+ * @param pdata [IN] the data field from which to get the value
+ * @param m [IN] the first index
+ * @param n [IN] the second index
+ * @param p [IN] the third index
+ * @return double the value in question in case of success, 0.0 otherwise       //? 0.0 otherwise
+ */
+double process_getvalue(process_data_t *pdata, int m, int n, int p);
 
 /**
  * @brief Perform the pressure update step

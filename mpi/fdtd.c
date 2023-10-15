@@ -288,6 +288,7 @@ void finalize_simulation(process_simulation_data_t *simdata) {
   free(simdata->params.rhoin_filename);
 
   return; // return early, not everything is malloc yet
+
 #if 0
   free(simdata->rho->vals);
   free(simdata->rho);
@@ -316,6 +317,97 @@ void finalize_simulation(process_simulation_data_t *simdata) {
 #endif
 }
 
+int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *psimgrid,
+                          data_t *cin, data_t *rhoin) {
+  if (psimdata == NULL || cin == NULL || rhoin == NULL) {
+    DEBUG_PRINT("Invalid NULL simdata or cin or rhoin");
+    return 1;
+  }
+
+  if ((psimdata->c = allocate_data(psimgrid)) == NULL ||
+      (psimdata->rho = allocate_data(psimgrid)) == NULL ||
+      (psimdata->rhohalf = allocate_data(psimgrid)) == NULL) {
+    DEBUG_PRINT("Failed to allocate memory");
+    return 1;
+  }
+
+  double dx = psimdata->params.dx;
+  double dxd2 = psimdata->params.dx / 2;
+
+  for (int p = psimgrid->startp; p <= psimgrid->endp; p++) {
+    for (int n = psimgrid->startn; n <= psimgrid->endn; n++) {
+      for (int m = psimgrid->startm; m <= psimgrid->endm; m++) {
+
+        double x = m * dx;
+        double y = n * dx;
+        double z = p * dx;
+
+        process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z));
+        process_setvalue(psimdata->rho, m ,n , p, trilinear_interpolation(rhoin, x,y,z));
+
+        x += dxd2;
+        y += dxd2;
+        z += dxd2;
+
+        process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z));
+      }
+    }
+  }
+
+  return 0;
+}
+
+int process_setvalue(process_data_t *pdata, int m, int n, int p, double val) {
+
+  int mbar = m - STARTM(pdata), nbar = n - STARTN(pdata), pbar = p - STARTP(pdata);
+  int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
+
+
+    if(mbar < -1 || mbar > pnumnodesx ||
+       nbar < -1 || nbar > pnumnodesy ||
+       pbar < -1 || pbar > pnumnodesz) {
+      return 1;
+    }
+
+    if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
+       nbar >= 0 && nbar <= pnumnodesy - 1 &&
+       pbar >= 0 && pbar <= pnumnodesz - 1) {
+
+      pdata->vals[pbar*pnumnodesx*pnumnodesy + nbar*pnumnodesx + mbar] = val;
+    }
+    else if(nbar >= 0 && nbar <= pnumnodesy - 1 &&
+            pbar >= 0 && pbar <= pnumnodesz - 1) {
+      if(mbar == -1){
+        pdata->ghostvals[LEFT][pbar*PNUMNODESY(pdata) + nbar] = val;
+      }
+      else {
+        pdata->ghostvals[RIGHT][pbar*PNUMNODESY(pdata) + nbar] = val;
+      }
+    }
+    else if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
+            pbar >= 0 && pbar <= pnumnodesz - 1) {
+      if(nbar == -1) {
+        pdata->ghostvals[FRONT][pbar*pnumnodesx + mbar] = val;
+      }
+      else {
+        pdata->ghostvals[BACK][pbar*pnumnodesx + mbar] = val;
+      }
+    }
+    else if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
+            nbar >= 0 && nbar <= pnumnodesy - 1) {
+      if(pbar == -1) {
+        pdata->ghostvals[DOWN][nbar*pnumnodesx + mbar] = val;
+      }
+      else {
+        pdata->ghostvals[UP][nbar*pnumnodesx + mbar]
+      }
+    }
+    else{
+      return 1;
+    }
+  return 0;
+}
+
 double process_getvalue(process_data_t *pdata, int m, int n, int p) {
   //Verify we are inside the boundaries
   if(m < 0 || n < 0 || p < 0) 
@@ -323,42 +415,41 @@ double process_getvalue(process_data_t *pdata, int m, int n, int p) {
   if(m >= pdata->grid.gnumx || n >= pdata->grid.gnumy || p >= pdata->grid.gnumz)
     return 0.0;
   
-  int mbar = m - STARTM(pdata);
-  int nbar = n - STARTN(pdata);
-  int pbar = p - STARTP(pdata);
+  int mbar = m - STARTM(pdata), nbar = n - STARTN(pdata), pbar = p - STARTP(pdata);
+  int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
 
   //We ask for ghost cells from the LEFT neighbor
 
-  if(mbar >= 0 && mbar <= PNUMNODESX(pdata) - 1 &&
-    nbar >= 0 && nbar <= PNUMNODESY(pdata) - 1 && 
-    pbar >= 0 && pbar <= PNUMNODESZ(pdata) - 1){
-    return pdata->vals[pbar*PNUMNODESX(pdata)*PNUMNODESY(pdata) + nbar*PNUMNODESX(pdata) + mbar];
+  if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
+    nbar >= 0 && nbar <= pnumnodesy - 1 && 
+    pbar >= 0 && pbar <= pnumnodesz - 1){
+    return pdata->vals[pbar*pnumnodesx*pnumnodesy + nbar*pnumnodesx + mbar];
   }
 
   if(mbar == - 1){
-    if(nbar >= 0 && nbar <= PNUMNODESY(pdata) - 1 && pbar >= 0 && pbar <= PNUMNODESZ(pdata) - 1){
-      return pdata->ghostvals[LEFT][pbar*PNUMNODESY(pdata) + nbar];
+    if(nbar >= 0 && nbar <= pnumnodesy - 1 && pbar >= 0 && pbar <= pnumnodesz - 1){
+      return pdata->ghostvals[LEFT][pbar*pnumnodesy + nbar];
     }
     else{ return 0.0; }
-  }else if(mbar == PNUMNODESX(pdata)){
-    if(nbar >= 0 && nbar <= PNUMNODESY(pdata) - 1 && pbar >= 0 && pbar <= PNUMNODESZ(pdata) - 1){
-      return pdata->ghostvals[RIGHT][pbar*PNUMNODESY(pdata) + nbar];
+  }else if(mbar == pnumnodesx){
+    if(nbar >= 0 && nbar <= pnumnodesy - 1 && pbar >= 0 && pbar <= pnumnodesz - 1){
+      return pdata->ghostvals[RIGHT][pbar*pnumnodesy + nbar];
     }
     else{ return 0.0; }
   }else if(nbar == -1){
-    if(pbar >= 0 && pbar <= PNUMNODESZ(pdata) - 1){
-      return pdata->ghostvals[FRONT][pbar*PNUMNODESX(pdata) + mbar];
+    if(pbar >= 0 && pbar <= pnumnodesz - 1){
+      return pdata->ghostvals[FRONT][pbar*pnumnodesx + mbar];
     }
     else{ return 0.0; }
-  }else if(nbar == PNUMNODESY(pdata)){
-    if(pbar >= 0 && pbar <= PNUMNODESZ(pdata) - 1){
-      return pdata->ghostvals[BACK][pbar*PNUMNODESX(pdata) + mbar];
+  }else if(nbar == pnumnodesy){
+    if(pbar >= 0 && pbar <= pnumnodesz - 1){
+      return pdata->ghostvals[BACK][pbar*pnumnodesx + mbar];
     }
     else{ return 0.0; }
   }else if(pbar == -1){
-    return pdata->ghostvals[DOWN][nbar*PNUMNODESX(pdata) + mbar];
-  }else if(pbar == PNUMNODESZ(pdata)){
-    return pdata->ghostvals[UP][nbar*PNUMNODESX(pdata) + mbar];
+    return pdata->ghostvals[DOWN][nbar*pnumnodesx + mbar];
+  }else if(pbar == pnumnodesz){
+    return pdata->ghostvals[UP][nbar*pnumnodesx + mbar];
   }
 }
 
