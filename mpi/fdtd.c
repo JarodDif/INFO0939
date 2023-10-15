@@ -361,7 +361,9 @@ void fill_data(data_t *data, double value) {
 }
 
 process_data_t *allocate_pdata(process_grid_t *grid) {
-  int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
+  int pnumnodesx = grid->endm - grid->startm + 1, 
+    pnumnodesy = grid->endn - grid->startn + 1, 
+    pnumnodesz = grid->endp - grid->startp + 1;
   size_t numnodes = pnumnodesx*pnumnodesy*pnumnodesz;
   if (numnodes <= 0) {
     DEBUG_PRINTF("Invalid number of nodes (%lu)", numnodes);
@@ -371,7 +373,7 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
   process_data_t *pdata;
   if ((pdata = malloc(sizeof(process_data_t))) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
-    free(data);
+    free(pdata);
     return NULL;
   }
 
@@ -404,7 +406,7 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
       break;
     }
     if(pdata->ghostvals[i] == NULL){
-      for(int j = i; j >= 0: --j){
+      for(int j = i; j >= 0; --j){
         free(pdata->ghostvals[j]);
       }
       free(pdata->ghostvals);
@@ -1108,24 +1110,28 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     numnodesz = MAX(floor((zmax - zmin) / psimdata->params.dx), 1);
 
   //Set correct value ranges
-  // We have rankX, rankY, rankZ, numX, numY, numZ, *min/max
   psim_grid.gnumx = numnodesx; psim_grid.gnumy = numnodesy; psim_grid.gnumz = numnodesz;
   psim_grid.startm = numnodesx*coords[0]/dims[0]; psim_grid.endm = numnodesx*(coords[0]+1)/dims[0] - 1;
   psim_grid.startn = numnodesy*coords[1]/dims[1]; psim_grid.endn = numnodesy*(coords[1]+1)/dims[1] - 1;
   psim_grid.startp = numnodesz*coords[2]/dims[2]; psim_grid.endp = numnodesz*(coords[2]+1)/dims[2] - 1;
 
-  printf("Rank %4d has has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n",
+  /*
+  printf("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n",
     cart_rank, psim_grid.startm, psim_grid.endm, psim_grid.startn, psim_grid.endn, psim_grid.startp, psim_grid.endp,
     psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz);
+  */
 
-#if 0
-
-  if (interpolate_inputmaps(simdata, &sim_grid, c_map, rho_map) != 0) {
+  if (interpolate_inputmaps(psimdata, &psim_grid, c_map, rho_map) != 0) {
     printf(
         "Error while converting input map to simulation grid. Aborting...\n\n");
     exit(1);
   }
 
+  printf("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n\tcvalue %10.5lf at (%3d, %3d, %3d)\n",
+    cart_rank, psim_grid.startm, psim_grid.endm, psim_grid.startn, psim_grid.endn, psim_grid.startp, psim_grid.endp,
+    psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.startm, psim_grid.startn, psim_grid.startp);
+
+#if 0
   if (simdata->params.outrate > 0 && simdata->params.outputs != NULL) {
     for (int i = 0; i < simdata->params.numoutputs; i++) {
       char *outfilei = simdata->params.outputs[i].filename;
@@ -1214,6 +1220,7 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   free(c_map);
 }
 
+//TODO: Needs to be modified so only one process closes the files
 void finalize_simulation(process_simulation_data_t *simdata) {
   if (simdata->params.outputs != NULL) {
     for (int i = 0; i < simdata->params.numoutputs; i++) {
@@ -1233,7 +1240,6 @@ void finalize_simulation(process_simulation_data_t *simdata) {
 
   return; // return early, not everything is malloc yet
 
-#if 0
   free(simdata->rho->vals);
   free(simdata->rho);
   free(simdata->rhohalf->vals);
@@ -1241,6 +1247,7 @@ void finalize_simulation(process_simulation_data_t *simdata) {
   free(simdata->c->vals);
   free(simdata->c);
 
+#if 0
   free(simdata->pold->vals);
   free(simdata->pold);
   free(simdata->pnew->vals);

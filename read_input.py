@@ -16,7 +16,7 @@ def read_double(f):
     return struct.unpack("d", b)[0]
 
 
-with open("example_inputs/simple3d/in_c_custom.dat", "rb") as f:
+with open("mpi/example_inputs/simple3d/in_c_custom.dat", "rb") as f:
     dims = read_int(f), read_int(f), read_int(f)
     print("Dimensions :", dims)
 
@@ -51,5 +51,3 @@ with open("example_inputs/simple3d/in_c_custom.dat", "rb") as f:
             ax.text(*coords, str(v))
 
         plt.show()
-
-

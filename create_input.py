@@ -1,7 +1,7 @@
 import numpy as np
 import struct
 
-dims = (3,3,3)
+dims = (2,2,2)
 lims = (0,1), (0,1), (0,1)
 
 def write_int(f, n: int):
@@ -30,13 +30,10 @@ def write_data(f, vals):
 
 vals = np.zeros(dims)
 
-for p in range(dims[2]):
-    vals[0,0,p] = vals[1,1,p] = vals[2,2,p] = 170
-    vals[2,0,p] = vals[0,2,p] = 170
-    vals[1,0,p] = vals[1,2,p] = 0
-    vals[0,1,p] = vals[2,1,p] = 340
+for i in np.ndindex(dims):
+    vals[i] = 3*np.sum(i)
 
-with open("example_inputs/simple3d/in_c_custom.dat", "wb") as f:
+with open("mpi/example_inputs/simple3d/in_c_custom.dat", "wb") as f:
     write_dims(f,dims)
     write_lims(f,lims)
     write_data(f,vals)

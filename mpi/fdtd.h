@@ -1,5 +1,4 @@
-#ifndef _FDTD_H_
-#define _FDTD_H_
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +52,10 @@
 #define INDEX3D(grid, m, n, p)                                                 \
   ((size_t)grid.numnodesy * grid.numnodesx * (p) + grid.numnodesx * (n) + (m))
 
+#define GETVALUE(dat, m, n, p) ((dat)->vals[INDEX3D((dat)->grid, m, n, p)])
+#define SETVALUE(dat, m, n, p, val)                                            \
+  ((dat)->vals[INDEX3D((dat)->grid, m, n, p)] = (val))
+
 // custom process_data_t MACROS 
 #define PNUMNODESX(pdat) ((pdat)->grid.endm - (pdat)->grid.startm + 1)
 #define PNUMNODESY(pdat) ((pdat)->grid.endn - (pdat)->grid.startn + 1)
@@ -85,7 +88,8 @@ typedef enum neighbor {
   BACK  = 3,
   DOWN  = 4,
   UP    = 5,
-  NEIGHBOR_TYPE_END = 6;
+  NEIGHBOR_TYPE_END = 6
+
 } neighbor_t;
 
 typedef enum source_type {
@@ -548,5 +552,3 @@ void finalize_simulation(process_simulation_data_t *simdata);
  * @param psimdata [INOUT] a simulation data object describing the simulation
  */
 void swap_timesteps(process_simulation_data_t *psimdata);
-
-#endif
