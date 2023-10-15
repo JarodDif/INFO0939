@@ -242,9 +242,9 @@ void print_output(output_t *output) {
 int process_setvalue(process_data_t *pdata, int m, int n, int p, double val) {
   //Verify we are inside the boundaries of the whole grid
   if(m < 0 || n < 0 || p < 0) 
-    return 0.0;
+    return 1;
   if(m >= pdata->grid.gnumx || n >= pdata->grid.gnumy || p >= pdata->grid.gnumz)
-    return 0.0;
+    return 1;
 
   int mbar = m - STARTM(pdata), nbar = n - STARTN(pdata), pbar = p - STARTP(pdata);
   int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
@@ -964,22 +964,27 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
   double dx = psimdata->params.dx;
   double dxd2 = psimdata->params.dx / 2;
 
-  for (int p = psimgrid->startp; p <= psimgrid->endp; p++) {
-    for (int n = psimgrid->startn; n <= psimgrid->endn; n++) {
-      for (int m = psimgrid->startm; m <= psimgrid->endm; m++) {
+  for (int p = psimgrid->startp - 1; p <= psimgrid->endp + 1; p++) {
+    for (int n = psimgrid->startn - 1; n <= psimgrid->endn + 1; n++) {
+      for (int m = psimgrid->startm - 1; m <= psimgrid->endm + 1; m++) {
 
         double x = m * dx;
         double y = n * dx;
         double z = p * dx;
 
-        process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z));
-        process_setvalue(psimdata->rho, m, n, p, trilinear_interpolation(rhoin, x,y,z));
+        if(process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z)) != 0 ||
+           process_setvalue(psimdata->rho, m, n, p, trilinear_interpolation(rhoin, x,y,z)) != 0) {
+          DEBUG_PRINT("Failed to set value");
+          return 1;
+        }
 
         x += dxd2;
         y += dxd2;
         z += dxd2;
 
-        process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z));
+        if(process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z))) {
+          DEBUG_PRINT("Failed to set value");
+        }
       }
     }
   }
