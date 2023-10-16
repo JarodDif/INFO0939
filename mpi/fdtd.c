@@ -921,9 +921,7 @@ int read_paramfile(parameters_t *params, const char *filename) {
 /******************************************************************************
  * Simulation-related functions                                               *
  ******************************************************************************/
-//TODO: Needs to be modified so only the process that contains the source applies it
-//TODO: Needs to accept a process_simulation_data_t*
-void apply_source(simulation_data_t *simdata, int step) {
+void apply_source(process_simulation_data_t *simdata, int step) {
   source_t *source = &simdata->params.source;
 
   double posx = source->posx;
@@ -933,17 +931,23 @@ void apply_source(simulation_data_t *simdata, int step) {
   double t = step * simdata->params.dt;
 
   int m, n, p;
-  closest_index(&simdata->pold->grid, posx, posy, posz, &m, &n, &p);
+  closest_index(&simdata->global_grid, posx, posy, posz, &m, &n, &p);
+
+  if(m < STARTM(simdata->pold) || m > ENDM(simdata->pold) ||
+    n < STARTN(simdata->pold) || n > ENDN(simdata->pold) ||
+    p < STARTP(simdata->pold) || p > ENDP(simdata->pold)){
+    return;
+  }
 
   if (source->type == SINE) {
     double freq = source->data[0];
 
-    SETVALUE(simdata->pold, m, n, p, sin(2 * M_PI * freq * t));
+    process_setvalue(simdata->pold, m, n, p, sin(2 * M_PI * freq * t));
 
   } else if (source->type == AUDIO) {
     int sample = MIN((int)(t * source->sampling), source->numsamples);
 
-    SETVALUE(simdata->pold, m, n, p, simdata->params.source.data[sample]);
+    process_setvalue(simdata->pold, m, n, p, simdata->params.source.data[sample]);
   }
 }
 
@@ -1109,17 +1113,20 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     numnodesy = MAX(floor((ymax - ymin) / psimdata->params.dx), 1),
     numnodesz = MAX(floor((zmax - zmin) / psimdata->params.dx), 1);
 
+  // Copy global grid into process simulation data
+  psimdata->global_grid.xmin = xmin; psimdata->global_grid.xmax = xmax;
+  psimdata->global_grid.ymin = ymin; psimdata->global_grid.ymax = ymax;
+  psimdata->global_grid.zmin = zmin; psimdata->global_grid.zmax = zmax;
+
+  psimdata->global_grid.numnodesx = numnodesx;
+  psimdata->global_grid.numnodesy = numnodesy;
+  psimdata->global_grid.numnodesz = numnodesz;
+
   //Set correct value ranges
   psim_grid.gnumx = numnodesx; psim_grid.gnumy = numnodesy; psim_grid.gnumz = numnodesz;
   psim_grid.startm = numnodesx*coords[0]/dims[0]; psim_grid.endm = numnodesx*(coords[0]+1)/dims[0] - 1;
   psim_grid.startn = numnodesy*coords[1]/dims[1]; psim_grid.endn = numnodesy*(coords[1]+1)/dims[1] - 1;
   psim_grid.startp = numnodesz*coords[2]/dims[2]; psim_grid.endp = numnodesz*(coords[2]+1)/dims[2] - 1;
-
-  /*
-  printf("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n",
-    cart_rank, psim_grid.startm, psim_grid.endm, psim_grid.startn, psim_grid.endn, psim_grid.startp, psim_grid.endp,
-    psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz);
-  */
 
   if (interpolate_inputmaps(psimdata, &psim_grid, c_map, rho_map) != 0) {
     printf(
