@@ -996,58 +996,73 @@ void update_pressure(process_simulation_data_t *psimdata) {
   const double dtdx = psimdata->params.dt / psimdata->params.dx;
 
   process_data_t *pold = psimdata->pold;
-  MPI_Request request_recv[6], request_send[6];
-
-  register int pnumnodesx = PNUMNODESX(pold), pnumnodesy = PNUMNODESY(pold), pnumnodesz = PNUMNODESZ(pold);
-
-  MPI_IRecv(pold->ghostvals[LEFT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT], LEFT, MPI_COMM_WORLD, request_recv[0]);
-  MPI_IRecv(pold->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], RIGHT, MPI_COMM_WORLD, request_recv[1]);
-  MPI_IRecv(pold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], FRONT, MPI_COMM_WORLD, request_recv[2]);
-  MPI_IRecv(pold->ghostvals[BACK], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], BACK, MPI_COMM_WORLD, request_recv[3]);
-  MPI_IRecv(pold->ghostvals[DOWN], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN], DOWN, MPI_COMM_WORLD, request_recv[4]);
-  MPI_IRecv(pold->ghostvals[UP], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], UP, MPI_COMM_WORLD, request_recv[5]);
-
-  MPI_Isend(pold->ghostvals[LEFT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT], LEFT, MPI_COMM_WORLD, request_send[6]);
-  MPI_Isend(pold->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], RIGHT, MPI_COMM_WORLD, request_send[1]);
-  MPI_Isend(pold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], FRONT, MPI_COMM_WORLD, request_send[2]);
-  MPI_Isend(pold->ghostvals[BACK], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], BACK, MPI_COMM_WORLD, request_send[3]);
-  MPI_Isend(pold->ghostvals[DOWN], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN], DOWN, MPI_COMM_WORLD, request_send[4]);
-  MPI_Isend(pold->ghostvals[UP], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], UP, MPI_COMM_WORLD, request_send[5]);
+  MPI_Request request_recv[3], request_send[3];
 
   int m, n, p;
+  register int pnumnodesx = PNUMNODESX(pold), pnumnodesy = PNUMNODESY(pold), pnumnodesz = PNUMNODESZ(pold);
 
-  for (p = STARTP(pold) + 1; p < ENDP(pold) - 1; p++) {
-    for (n = STARTN(pold) + 1; n < ENDN(pold) - 1; n++) {
-      for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++) {
+  MPI_Irecv(psimdata->vxold->ghostvals[LEFT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT], SEND_VX, cart_comm, &request_recv[0]);
+  MPI_Irecv(psimdata->vyold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_VY, cart_comm, &request_recv[1]);
+  MPI_Irecv(psimdata->vzold->ghostvals[DOWN], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN], SEND_VZ, cart_comm, &request_recv[2]);
+
+  double *border_vx, *border_vy, *border_vz;
+
+  if ((border_vx = malloc(pnumnodesy*pnumnodesz * sizeof(double))) == NULL ||
+      (border_vy = malloc(pnumnodesx*pnumnodesz * sizeof(double))) == NULL ||
+      (border_vz = malloc(pnumnodesx*pnumnodesy * sizeof(double))) == NULL) {
+    DEBUG_PRINT("Failed to allocate memory");
+    exit(1);
+  }
+
+  for (p = 0; p < pnumnodesz; p++) {
+    for (n = 0; n < pnumnodesy; n++){
+      border_vx[p * pnumnodesy + n] = process_getvalue(psimdata->vxold, ENDM(pold), n + STARTN(pold), p + STARTP(pold));
+    }
+  }
+  for (p = 0; p < pnumnodesz; p++) {
+    for (m = 0; m < pnumnodesx; m++){
+      border_vy[p * pnumnodesx + m] = process_getvalue(psimdata->vyold, m + STARTM(pold), ENDN(pold), p + STARTP(pold));
+    }
+  }
+  for (n = 0; n < pnumnodesy; n++) {
+    for (m = 0; m < pnumnodesx; m++){
+      border_vy[n * pnumnodesx + m] = process_getvalue(psimdata->vzold, m + STARTM(pold), n + STARTN(pold), ENDP(pold));
+    }
+  }
+
+  MPI_Isend(border_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_VX, cart_comm, &request_send[0]);
+  MPI_Isend(border_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], SEND_VY, cart_comm, &request_send[1]);
+  MPI_Isend(border_vz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], SEND_VZ, cart_comm, &request_send[2]);
+
+  for (p = STARTP(pold) + 1; p <= ENDP(pold); p++) {
+    for (n = STARTN(pold) + 1; n <= ENDN(pold); n++) {
+      for (m = STARTM(pold) + 1; m <= ENDM(pold); m++) {
         update_pressure_routine(psimdata, m, n, p, dtdx);
       }
     }
   }
 
-  MPI_Waitall(6, request_recv, MPI_STATUS_IGNORE);
+  MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  for (p = STARTP(pold); p < ENDP(pold); p++) {
-    for (n = STARTN(pold); n < ENDN(pold); n++) {
+  for (p = STARTP(pold); p <= ENDP(pold); p++) {
+    for (n = STARTN(pold); n <= ENDN(pold); n++) {
       update_pressure_routine(psimdata, STARTM(pold), n, p, dtdx);
-      update_pressure_routine(psimdata, ENDM(pold), n, p, dtdx);
     }
   }
 
-  for (p = STARTP(pold); p < ENDP(pold); p++) {
-    for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++) {
+  for (p = STARTP(pold); p <= ENDP(pold); p++) {
+    for (m = STARTM(pold) + 1; m <= ENDM(pold) - 1; m++) {
       update_pressure_routine(psimdata, m, STARTN(pold), p, dtdx);
-      update_pressure_routine(psimdata, m, ENDN(pold), p, dtdx);
     }
   }
 
-  for (n = STARTN(pold) + 1; n < ENDN(pold) - 1; n++){
-    for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++){
+  for (n = STARTN(pold) + 1; n <= ENDN(pold) - 1; n++){
+    for (m = STARTM(pold) + 1; m <= ENDM(pold) - 1; m++){
       update_pressure_routine(psimdata, m, n, STARTP(pold), dtdx);
-      update_pressure_routine(psimdata, m, n, ENDP(pold), dtdx);
     }
   }
 
-  MPI_Waitall(6, request_send, MPI_STATUS_IGNORE);
+  MPI_Waitall(3, request_send, MPI_STATUS_IGNORE);
 }
 
 void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p, double dtdx) {
