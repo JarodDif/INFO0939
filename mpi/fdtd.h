@@ -221,6 +221,8 @@ typedef struct simulation_data {
 typedef struct process_simulation_data{
   parameters_t params;
 
+  grid_t global_grid;
+
   process_data_t *c, *rho, *rhohalf;
 
   process_data_t *pold, *pnew;
@@ -495,7 +497,7 @@ int read_paramfile(parameters_t *params, const char *filename);
  * applied to the pold member this object
  * @param step [IN] the simulation time step index
  */
-void apply_source(simulation_data_t *simdata, int step);
+void apply_source(process_simulation_data_t *simdata, int step);
 
 /**
  * @brief Interpolate the input density and spped maps so that they corresponds
