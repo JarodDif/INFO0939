@@ -990,39 +990,83 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
   return 0;
 }
 
-//TODO: Needs to accept a process_simulation_data_t*
-//TODO: processes need to send their old velocities to their RIGHT,BACK,UP neighbor
-void update_pressure(simulation_data_t *simdata) {
-  const double dtdx = simdata->params.dt / simdata->params.dx;
 
-  const int numnodesx = NUMNODESX(simdata->pold);
-  const int numnodesy = NUMNODESY(simdata->pold);
-  const int numnodesz = NUMNODESZ(simdata->pold);
+void update_pressure(process_simulation_data_t *psimdata) {
 
-  for (int p = 0; p < numnodesz; p++) {
-    for (int n = 0; n < numnodesy; n++) {
-      for (int m = 0; m < numnodesx; m++) {
-        double c = GETVALUE(simdata->c, m, n, p);
-        double rho = GETVALUE(simdata->rho, m, n, p);
+  const double dtdx = psimdata->params.dt / psimdata->params.dx;
 
-        double rhoc2dtdx = rho * c * c * dtdx;
+  process_data_t *pold = psimdata->pold;
+  MPI_Request request_recv[6], request_send[6];
 
-        double dvx = GETVALUE(simdata->vxold, m, n, p);
-        double dvy = GETVALUE(simdata->vyold, m, n, p);
-        double dvz = GETVALUE(simdata->vzold, m, n, p);
+  register int pnumnodesx = PNUMNODESX(pold), pnumnodesy = PNUMNODESY(pold), pnumnodesz = PNUMNODESZ(pold);
 
-        dvx -= m > 0 ? GETVALUE(simdata->vxold, m - 1, n, p) : 0.0;
-        dvy -= n > 0 ? GETVALUE(simdata->vyold, m, n - 1, p) : 0.0;
-        dvz -= p > 0 ? GETVALUE(simdata->vzold, m, n, p - 1) : 0.0;
+  MPI_IRecv(pold->ghostvals[LEFT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT], LEFT, MPI_COMM_WORLD, request_recv[0]);
+  MPI_IRecv(pold->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], RIGHT, MPI_COMM_WORLD, request_recv[1]);
+  MPI_IRecv(pold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], FRONT, MPI_COMM_WORLD, request_recv[2]);
+  MPI_IRecv(pold->ghostvals[BACK], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], BACK, MPI_COMM_WORLD, request_recv[3]);
+  MPI_IRecv(pold->ghostvals[DOWN], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN], DOWN, MPI_COMM_WORLD, request_recv[4]);
+  MPI_IRecv(pold->ghostvals[UP], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], UP, MPI_COMM_WORLD, request_recv[5]);
 
-        double prev_p = GETVALUE(simdata->pold, m, n, p);
+  MPI_Isend(pold->ghostvals[LEFT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT], LEFT, MPI_COMM_WORLD, request_send[6]);
+  MPI_Isend(pold->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], RIGHT, MPI_COMM_WORLD, request_send[1]);
+  MPI_Isend(pold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], FRONT, MPI_COMM_WORLD, request_send[2]);
+  MPI_Isend(pold->ghostvals[BACK], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], BACK, MPI_COMM_WORLD, request_send[3]);
+  MPI_Isend(pold->ghostvals[DOWN], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN], DOWN, MPI_COMM_WORLD, request_send[4]);
+  MPI_Isend(pold->ghostvals[UP], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], UP, MPI_COMM_WORLD, request_send[5]);
 
-        SETVALUE(simdata->pnew, m, n, p,
-                 prev_p - rhoc2dtdx * (dvx + dvy + dvz));
+  int m, n, p;
+
+  for (p = STARTP(pold) + 1; p < ENDP(pold) - 1; p++) {
+    for (n = STARTN(pold) + 1; n < ENDN(pold) - 1; n++) {
+      for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++) {
+        update_pressure_routine(psimdata, m, n, p, dtdx);
       }
     }
   }
+
+  MPI_Waitall(6, request_recv, MPI_STATUS_IGNORE);
+
+  for (p = STARTP(pold); p < ENDP(pold); p++) {
+    for (n = STARTN(pold); n < ENDN(pold); n++) {
+      update_pressure_routine(psimdata, STARTM(pold), n, p, dtdx);
+      update_pressure_routine(psimdata, ENDM(pold), n, p, dtdx);
+    }
+  }
+
+  for (p = STARTP(pold); p < ENDP(pold); p++) {
+    for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++) {
+      update_pressure_routine(psimdata, m, STARTN(pold), p, dtdx);
+      update_pressure_routine(psimdata, m, ENDN(pold), p, dtdx);
+    }
+  }
+
+  for (n = STARTN(pold) + 1; n < ENDN(pold) - 1; n++){
+    for (m = STARTM(pold) + 1; m < ENDM(pold) - 1; m++){
+      update_pressure_routine(psimdata, m, n, STARTP(pold), dtdx);
+      update_pressure_routine(psimdata, m, n, ENDP(pold), dtdx);
+    }
+  }
+
+  MPI_Waitall(6, request_send, MPI_STATUS_IGNORE);
 }
+
+void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p, double dtdx) {
+  double c = process_getvalue(psimdata->c, m, n, p);
+  double rho = process_getvalue(psimdata->rho, m, n, p);
+
+  double dvx = process_getvalue(psimdata->vxold, m, n, p);
+  double dvy = process_getvalue(psimdata->vyold, m, n, p);
+  double dvz = process_getvalue(psimdata->vzold, m, n, p);
+
+  dvx -= m > 0 ? process_getvalue(psimdata->vxold, m - 1, n, p) : 0.0;
+  dvy -= n > 0 ? process_getvalue(psimdata->vyold, m, n - 1, p) : 0.0;
+  dvz -= p > 0 ? process_getvalue(psimdata->vzold, m, n, p - 1) : 0.0;
+
+  double prev_p = process_getvalue(psimdata->pold, m, n, p);
+
+  process_setvalue(psimdata->pnew, m, n, p, prev_p - rho * c * c * dtdx * (dvx + dvy + dvz));
+}
+  
 
 //TODO: Needs to accept a process_simulation_data_t*
 //TODO: processes need to send their new pressures to theur LEFT,FRONT,DOWN neighbor
