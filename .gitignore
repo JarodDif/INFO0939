@@ -6,3 +6,5 @@
 fdtd
 fdtd_*
 data2gmsh/data2gmsh
+# Exclude VSC settings
+.vscode

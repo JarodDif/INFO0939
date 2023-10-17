@@ -1,5 +1,4 @@
 #include <mpi.h>
-
 #include "fdtd.h"
 
 // Global topology values that once set never change
@@ -972,19 +971,14 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
         double y = n * dx;
         double z = p * dx;
 
-        if(process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z)) != 0 ||
-           process_setvalue(psimdata->rho, m, n, p, trilinear_interpolation(rhoin, x,y,z)) != 0) {
-          DEBUG_PRINT("Failed to set value");
-          return 1;
-        }
+        process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z));
+        process_setvalue(psimdata->rho, m, n, p, trilinear_interpolation(rhoin, x,y,z));
 
         x += dxd2;
         y += dxd2;
         z += dxd2;
 
-        if(process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z))) {
-          DEBUG_PRINT("Failed to set value");
-        }
+        process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z));
       }
     }
   }
