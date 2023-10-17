@@ -207,6 +207,7 @@ typedef struct data {
 
 typedef struct process_data {
   process_grid_t grid;
+  int malloc_ghost_flags;
 
   double *vals;
 
@@ -236,6 +237,14 @@ typedef struct process_simulation_data{
   process_data_t *vxold, *vxnew;
   process_data_t *vyold, *vynew;
   process_data_t *vzold, *vznew;
+
+  double *buffer_vx;
+  double *buffer_vy;
+  double *buffer_vz;
+  double *buffer_px;
+  double *buffer_py;
+  double *buffer_pz;
+
 } process_simulation_data_t;
 
 const char *source_type_keywords[] = {[SINE] = "sine", [AUDIO] = "audio"};
@@ -350,16 +359,24 @@ data_t *allocate_data(grid_t *grid);
  * @param data  [IN] the data object to fill
  * @param value [IN] the value used to fill the array
  */
-void fill_data(data_t *data, double value);
+void fill_data(process_data_t *data, double value);
 
 /**
  * @brief Allocate a new process_data object, the 3d array to store values as
  *        well as the storage needed for ghost cells according to the given grid
  * 
  * @param grid [IN] the grid describing the 3D array to allocate
+ * @param malloc_ghost_flags [IN] a bit representation of ghost cells to allocate
  * @return process_data_t* return a new process_data object or NULL if allocation failed
 */
-process_data_t *allocate_pdata(process_grid_t *grid);
+process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags);
+
+/**
+ * @brief Frees a pdata structure
+ * 
+ * @param pdata [IN] the pdata to free
+*/
+void free_pdata(process_data_t *pdata);
 
 /******************************************************************************
  * Data file functions                                                        *
