@@ -38,14 +38,15 @@ int main(int argc, char *argv[]) {
   process_simulation_data_t simdata;
   init_simulation(&simdata, argv[1]);
 
-#if 0
   int numtimesteps = floor(simdata.params.maxt / simdata.params.dt);
 
   double start = GET_TIME();
   for (int tstep = 0; tstep <= numtimesteps; tstep++) {
     apply_source(&simdata, tstep);
 
-    if (simdata.params.outrate > 0 && (tstep % simdata.params.outrate) == 0) {
+#if 0
+    // Need to collect data from all the different processes
+    if (cart_rank == 0 && simdata.params.outrate > 0 && (tstep % simdata.params.outrate) == 0) {
       for (int i = 0; i < simdata.params.numoutputs; i++) {
         data_t *output_data = NULL;
 
@@ -68,24 +69,28 @@ int main(int argc, char *argv[]) {
         }
 
         double time = tstep * simdata.params.dt;
-        write_output(&simdata.params.outputs[i], output_data, tstep, time);
+        if(cart_rank == 0)
+          write_output(&simdata.params.outputs[i], output_data, tstep, time);
       }
     }
+#endif
 
-    if (tstep > 0 && tstep % (numtimesteps / 10) == 0) {
-      printf("step %8d/%d", tstep, numtimesteps);
+    if(cart_rank == 0){
+      if (tstep > 0 && tstep % (numtimesteps / 10) == 0) {
+        printf("step %8d/%d", tstep, numtimesteps);
 
-      if (tstep != numtimesteps) {
-        double elapsed_sofar = GET_TIME() - start;
-        double timeperstep_sofar = elapsed_sofar / tstep;
+        if (tstep != numtimesteps) {
+          double elapsed_sofar = GET_TIME() - start;
+          double timeperstep_sofar = elapsed_sofar / tstep;
 
-        double eta = (numtimesteps - tstep) * timeperstep_sofar;
+          double eta = (numtimesteps - tstep) * timeperstep_sofar;
 
-        printf(" (ETA: %8.3lf seconds)", eta);
+          printf(" (ETA: %8.3lf seconds)", eta);
+        }
+
+        printf("\n");
+        fflush(stdout);
       }
-
-      printf("\n");
-      fflush(stdout);
     }
 
     update_pressure(&simdata);
@@ -93,15 +98,13 @@ int main(int argc, char *argv[]) {
     swap_timesteps(&simdata);
   }
 
-  double elapsed = GET_TIME() - start;
-  double numupdates =
-      (double)NUMNODESTOT(simdata.pold->grid) * (numtimesteps + 1);
-  double updatespers = numupdates / elapsed / 1e6;
-
-  printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed,
-         updatespers);
-
-#endif
+  if(cart_rank == 0){
+    double elapsed = GET_TIME() - start;
+    double numupdates =
+        (double)NUMNODESTOT(simdata.pold->grid) * (numtimesteps + 1);
+    double updatespers = numupdates / elapsed / 1e6;
+    printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed, updatespers);
+  }
 
   finalize_simulation(&simdata);
 
@@ -346,22 +349,22 @@ data_t* allocate_data(grid_t *grid){
   return data;
 }
 
-void fill_data(data_t *data, double value) {
-  if (data == NULL) {
+void fill_data(process_data_t *pdata, double value) {
+  if (pdata == NULL) {
     DEBUG_PRINT("Invalid NULL data");
     return;
   }
 
-  for (int p = 0; p < NUMNODESZ(data); p++) {
-    for (int n = 0; n < NUMNODESY(data); n++) {
-      for (int m = 0; m < NUMNODESX(data); m++) {
-        SETVALUE(data, m, n, p, value);
+  for (int p = STARTP(pdata); p <= ENDP(pdata); p++) {
+    for (int n = STARTN(pdata); n <= ENDN(pdata); n++) {
+      for (int m = STARTM(pdata); m <= ENDM(pdata); m++) {
+        process_setvalue(pdata, m, n, p, value);
       }
     }
   }
 }
 
-process_data_t *allocate_pdata(process_grid_t *grid) {
+process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags) {
   int pnumnodesx = grid->endm - grid->startm + 1, 
     pnumnodesy = grid->endn - grid->startn + 1, 
     pnumnodesz = grid->endp - grid->startp + 1;
@@ -377,6 +380,8 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
     free(pdata);
     return NULL;
   }
+
+  pdata->malloc_ghost_flags = malloc_ghost_flags;
 
   if ((pdata->vals = malloc(numnodes * sizeof(double))) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
@@ -394,6 +399,8 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
   }
 
   for(int i=0; i < NEIGHBOR_TYPE_END; ++i){
+    // Only allocate asked ghost cells
+    if(!((1 << i) & malloc_ghost_flags)) continue;
     switch (i/2){
     case 0:
       pdata->ghostvals[i] = malloc(sizeof(double) * pnumnodesy*pnumnodesz);
@@ -408,7 +415,7 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
     }
     if(pdata->ghostvals[i] == NULL){
       for(int j = i; j >= 0; --j){
-        free(pdata->ghostvals[j]);
+        if (malloc_ghost_flags & (1 << j)) free(pdata->ghostvals[j]);
       }
       free(pdata->ghostvals);
       free(pdata->vals);
@@ -420,6 +427,17 @@ process_data_t *allocate_pdata(process_grid_t *grid) {
   pdata->grid = *grid;
 
   return pdata;
+}
+
+void free_pdata(process_data_t *pdata){
+  if(pdata == NULL) return;
+
+  for(int i = 0; i < NEIGHBOR_TYPE_END; ++i){
+        if (pdata->malloc_ghost_flags & (1 << i)) free(pdata->ghostvals[i]);
+      }
+      free(pdata->ghostvals);
+      free(pdata->vals);
+      free(pdata);
 }
 
 /******************************************************************************
@@ -570,7 +588,6 @@ int write_data(FILE *fp, data_t *data, int step, double time) {
 /******************************************************************************
  * Output file functions                                                      *
  ******************************************************************************/
-//TODO: Needs to be modified so only one process writes the file
 int write_output(output_t *output, data_t *data, int step, double time) {
   if (output == NULL || data == NULL) {
     DEBUG_PRINT("NULL pointer passed as argument");
@@ -622,7 +639,6 @@ int write_output(output_t *output, data_t *data, int step, double time) {
   return 0;
 }
 
-//TODO: Needs to be modified so only one process opens the file
 int open_outputfile(output_t *output, grid_t *simgrid) {
   if (output == NULL || simgrid == NULL) {
     DEBUG_PRINT("Invalid NULL pointer in argment");
@@ -959,9 +975,9 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
     return 1;
   }
 
-  if ((psimdata->c = allocate_pdata(psimgrid)) == NULL ||
-      (psimdata->rho = allocate_pdata(psimgrid)) == NULL ||
-      (psimdata->rhohalf = allocate_pdata(psimgrid)) == NULL) {
+  if ((psimdata->c = allocate_pdata(psimgrid, 0)) == NULL ||
+      (psimdata->rho = allocate_pdata(psimgrid, 0)) == NULL ||
+      (psimdata->rhohalf = allocate_pdata(psimgrid, 0)) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
     return 1;
   }
@@ -1016,23 +1032,23 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (nbar = 0; nbar < pnumnodesy; nbar++){
-      border_vx[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->vxold, ENDM(pold), nbar + STARTN(pold), pbar + STARTP(pold));
+      psimdata->buffer_vx[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->vxold, ENDM(pold), nbar + STARTN(pold), pbar + STARTP(pold));
     }
   }
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      border_vy[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->vyold, mbar + STARTM(pold), ENDN(pold), pbar + STARTP(pold));
+      psimdata->buffer_vy[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->vyold, mbar + STARTM(pold), ENDN(pold), pbar + STARTP(pold));
     }
   }
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      border_vz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->vzold, mbar + STARTM(pold), nbar + STARTN(pold), ENDP(pold));
+      psimdata->buffer_vz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->vzold, mbar + STARTM(pold), nbar + STARTN(pold), ENDP(pold));
     }
   }
 
-  MPI_Isend(border_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
-  MPI_Isend(border_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK], SEND_Y, cart_comm, &request_send[1]);
-  MPI_Isend(border_vz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP], SEND_Z, cart_comm, &request_send[2]);
+  MPI_Isend(psimdata->buffer_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
+  MPI_Isend(psimdata->buffer_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
+  MPI_Isend(psimdata->buffer_vz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_send[2]);
 
   for (pbar = STARTP(pold) + 1; pbar <= ENDP(pold); pbar++) {
     for (nbar = STARTN(pold) + 1; nbar <= ENDN(pold); nbar++) {
@@ -1042,7 +1058,7 @@ void update_pressure(process_simulation_data_t *psimdata) {
     }
   }
 
-  MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
+  MPI_Waitall(3, request_recv, MPI_STATUSES_IGNORE);
 
   for (pbar = STARTP(pold); pbar <= ENDP(pold); pbar++) {
     for (nbar = STARTN(pold); nbar <= ENDN(pold); nbar++) {
@@ -1062,7 +1078,7 @@ void update_pressure(process_simulation_data_t *psimdata) {
     }
   }
 
-  MPI_Waitall(3, request_send, MPI_STATUS_IGNORE);
+  MPI_Waitall(3, request_send, MPI_STATUSES_IGNORE);
 }
 
 void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p) {
@@ -1248,6 +1264,10 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   psim_grid.startn = numnodesy*coords[1]/dims[1]; psim_grid.endn = numnodesy*(coords[1]+1)/dims[1] - 1;
   psim_grid.startp = numnodesz*coords[2]/dims[2]; psim_grid.endp = numnodesz*(coords[2]+1)/dims[2] - 1;
 
+  int l_numnodesx = psim_grid.endm - psim_grid.startm + 1,
+    l_numnodesy = psim_grid.endn - psim_grid.startn + 1,
+    l_numnodesz = psim_grid.endp - psim_grid.startp + 1;
+
   if (interpolate_inputmaps(psimdata, &psim_grid, c_map, rho_map) != 0) {
     printf(
         "Error while converting input map to simulation grid. Aborting...\n\n");
@@ -1258,88 +1278,96 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     cart_rank, psim_grid.startm, psim_grid.endm, psim_grid.startn, psim_grid.endn, psim_grid.startp, psim_grid.endp,
     psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.startm, psim_grid.startn, psim_grid.startp);
 
-#if 0
-  if (simdata->params.outrate > 0 && simdata->params.outputs != NULL) {
-    for (int i = 0; i < simdata->params.numoutputs; i++) {
-      char *outfilei = simdata->params.outputs[i].filename;
+  if (cart_rank == 0){
+    if (psimdata->params.outrate > 0 && psimdata->params.outputs != NULL) {
+      for (int i = 0; i < psimdata->params.numoutputs; i++) {
+        char *outfilei = psimdata->params.outputs[i].filename;
 
-      for (int j = 0; j < i; j++) {
-        char *outfilej = simdata->params.outputs[j].filename;
+        for (int j = 0; j < i; j++) {
+          char *outfilej = psimdata->params.outputs[j].filename;
 
-        if (strcmp(outfilei, outfilej) == 0) {
-          printf("Duplicate output file: '%s'. Aborting...\n\n", outfilei);
+          if (strcmp(outfilei, outfilej) == 0) {
+            printf("Duplicate output file: '%s'. Aborting...\n\n", outfilei);
+            exit(1);
+          }
+        }
+      }
+
+      for (int i = 0; i < psimdata->params.numoutputs; i++) {
+        output_t *output = &psimdata->params.outputs[i];
+
+        if (open_outputfile(output, &psimdata->global_grid) != 0) {
+          printf("Failed to open output file: '%s'. Aborting...\n\n",
+                output->filename);
           exit(1);
         }
       }
     }
-
-    for (int i = 0; i < simdata->params.numoutputs; i++) {
-      output_t *output = &simdata->params.outputs[i];
-
-      if (open_outputfile(output, &sim_grid) != 0) {
-        printf("Failed to open output file: '%s'. Aborting...\n\n",
-               output->filename);
-        exit(1);
-      }
-    }
   }
 
-  if ((simdata->pold = allocate_data(&sim_grid)) == NULL ||
-      (simdata->pnew = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vxold = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vxnew = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vyold = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vynew = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vzold = allocate_data(&sim_grid)) == NULL ||
-      (simdata->vznew = allocate_data(&sim_grid)) == NULL) {
+  if ((psimdata->pold  = allocate_pdata(&psim_grid, 0b000000)) == NULL ||
+      (psimdata->pnew  = allocate_pdata(&psim_grid, 0b101010)) == NULL ||
+      (psimdata->vxold = allocate_pdata(&psim_grid, 0b000001)) == NULL ||
+      (psimdata->vxnew = allocate_pdata(&psim_grid, 0b000000)) == NULL ||
+      (psimdata->vyold = allocate_pdata(&psim_grid, 0b000100)) == NULL ||
+      (psimdata->vynew = allocate_pdata(&psim_grid, 0b000000)) == NULL ||
+      (psimdata->vzold = allocate_pdata(&psim_grid, 0b010000)) == NULL ||
+      (psimdata->vznew = allocate_pdata(&psim_grid, 0b000000)) == NULL ||
+      (psimdata->buffer_vx = malloc(l_numnodesy*l_numnodesz*sizeof(double))) == NULL ||
+      (psimdata->buffer_vy = malloc(l_numnodesx*l_numnodesz*sizeof(double))) == NULL ||
+      (psimdata->buffer_vz = malloc(l_numnodesx*l_numnodesy*sizeof(double))) == NULL ||
+      (psimdata->buffer_px = malloc(l_numnodesy*l_numnodesz*sizeof(double))) == NULL ||
+      (psimdata->buffer_py = malloc(l_numnodesx*l_numnodesz*sizeof(double))) == NULL ||
+      (psimdata->buffer_pz = malloc(l_numnodesx*l_numnodesy*sizeof(double))) == NULL) {
     printf("Failed to allocate memory. Aborting...\n\n");
     exit(1);
   }
 
-  fill_data(simdata->pold, 0.0);
-  fill_data(simdata->pnew, 0.0);
+  fill_data(psimdata->pold, 0.0);
+  fill_data(psimdata->pnew, 0.0);
 
-  fill_data(simdata->vynew, 0.0);
-  fill_data(simdata->vxold, 0.0);
-  fill_data(simdata->vynew, 0.0);
-  fill_data(simdata->vyold, 0.0);
-  fill_data(simdata->vznew, 0.0);
-  fill_data(simdata->vzold, 0.0);
+  fill_data(psimdata->vynew, 0.0);
+  fill_data(psimdata->vxold, 0.0);
+  fill_data(psimdata->vynew, 0.0);
+  fill_data(psimdata->vyold, 0.0);
+  fill_data(psimdata->vznew, 0.0);
+  fill_data(psimdata->vzold, 0.0);
 
-  printf("\n");
-  printf(" Grid spacing: %g\n", simdata->params.dx);
-  printf("  Grid size X: %d\n", sim_grid.numnodesx);
-  printf("  Grid size Y: %d\n", sim_grid.numnodesy);
-  printf("  Grid size Z: %d\n", sim_grid.numnodesz);
-  printf("    Time step: %g\n", simdata->params.dt);
-  printf(" Maximum time: %g\n\n", simdata->params.maxt);
+  if(cart_rank == 0){
+    printf("\n");
+    printf(" Grid spacing: %g\n", psimdata->params.dx);
+    printf("  Grid size X: %d\n", numnodesx);
+    printf("  Grid size Y: %d\n", numnodesy);
+    printf("  Grid size Z: %d\n", numnodesz);
+    printf("    Time step: %g\n", psimdata->params.dt);
+    printf(" Maximum time: %g\n\n", psimdata->params.maxt);
 
-  if (simdata->params.outrate > 0 && simdata->params.outputs) {
-    int outsampling =
-        (int)(1.0 / (simdata->params.outrate * simdata->params.dt));
+    if (psimdata->params.outrate > 0 && psimdata->params.outputs) {
+      int outsampling =
+          (int)(1.0 / (psimdata->params.outrate * psimdata->params.dt));
 
-    printf("     Output rate: every %d step(s)\n", simdata->params.outrate);
-    printf(" Output sampling: %d Hz\n\n", outsampling);
-    printf(" Output files:\n\n");
+      printf("     Output rate: every %d step(s)\n", psimdata->params.outrate);
+      printf(" Output sampling: %d Hz\n\n", outsampling);
+      printf(" Output files:\n\n");
 
-    for (int i = 0; i < simdata->params.numoutputs; i++) {
-      print_output(&simdata->params.outputs[i]);
+      for (int i = 0; i < psimdata->params.numoutputs; i++) {
+        print_output(&psimdata->params.outputs[i]);
+      }
+
+      printf("\n");
+
+    } else if (psimdata->params.outrate < 0) {
+      printf("  Output is disabled (output rate set to 0)\n\n");
+
+    } else {
+      printf("  Output is disabled (not output specified)\n\n");
     }
 
-    printf("\n");
-
-  } else if (simdata->params.outrate < 0) {
-    printf("  Output is disabled (output rate set to 0)\n\n");
-
-  } else {
-    printf("  Output is disabled (not output specified)\n\n");
+    print_source(&psimdata->params.source);
+    
+    fflush(stdout);
   }
 
-  print_source(&simdata->params.source);
-
-  fflush(stdout);
-
-#endif
 
   free(rho_map->vals);
   free(rho_map);
@@ -1347,15 +1375,14 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   free(c_map);
 }
 
-//TODO: Needs to be modified so only one process closes the files
 void finalize_simulation(process_simulation_data_t *simdata) {
   if (simdata->params.outputs != NULL) {
     for (int i = 0; i < simdata->params.numoutputs; i++) {
       free(simdata->params.outputs[i].filename);
 
-      /*if (simdata->params.outrate > 0) {
+      if (cart_rank == 0 && simdata->params.outrate > 0) {
         fclose(simdata->params.outputs[i].fp);
-      }*/
+      }
     }
 
     free(simdata->params.outputs);
@@ -1365,34 +1392,25 @@ void finalize_simulation(process_simulation_data_t *simdata) {
   free(simdata->params.cin_filename);
   free(simdata->params.rhoin_filename);
 
-  return; // return early, not everything is malloc yet
+  free_pdata(simdata->rho);
+  free_pdata(simdata->rhohalf);
+  free_pdata(simdata->c);
 
-  free(simdata->rho->vals);
-  free(simdata->rho);
-  free(simdata->rhohalf->vals);
-  free(simdata->rhohalf);
-  free(simdata->c->vals);
-  free(simdata->c);
+  free_pdata(simdata->pold);
+  free_pdata(simdata->pnew);
+  free_pdata(simdata->vxold);
+  free_pdata(simdata->vyold);
+  free_pdata(simdata->vzold);
+  free_pdata(simdata->vxnew);
+  free_pdata(simdata->vynew);
+  free_pdata(simdata->vznew);
 
-#if 0
-  free(simdata->pold->vals);
-  free(simdata->pold);
-  free(simdata->pnew->vals);
-  free(simdata->pnew);
-
-  free(simdata->vxold->vals);
-  free(simdata->vxold);
-  free(simdata->vxnew->vals);
-  free(simdata->vxnew);
-  free(simdata->vyold->vals);
-  free(simdata->vyold);
-  free(simdata->vynew->vals);
-  free(simdata->vynew);
-  free(simdata->vzold->vals);
-  free(simdata->vzold);
-  free(simdata->vznew->vals);
-  free(simdata->vznew);
-#endif
+  free(simdata->buffer_vx);
+  free(simdata->buffer_vy);
+  free(simdata->buffer_vz);
+  free(simdata->buffer_px);
+  free(simdata->buffer_py);
+  free(simdata->buffer_pz);
 }
 
 void swap_timesteps(process_simulation_data_t *psimdata) {
