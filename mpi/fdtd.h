@@ -93,10 +93,9 @@ typedef enum neighbor {
 } neighbor_t;
 
 typedef enum tag {
-  SEND_VX = 100,
-  SEND_VY,
-  SEND_VZ,
-  SEND_P
+  SEND_X = 100,
+  SEND_Y,
+  SEND_Z
 } tag_t;
 
 typedef enum source_type {
