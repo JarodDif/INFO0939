@@ -540,7 +540,7 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
 /**
  * @brief Perform the pressure update step
  *
- * @param simdata [INOUT] a simulation data object used to get the input and
+ * @param psimdata [INOUT] a simulation data object used to get the input and
  * store result of the update step
  */
 void update_pressure(process_simulation_data_t *psimdata);
@@ -548,21 +548,32 @@ void update_pressure(process_simulation_data_t *psimdata);
 /**
  * @brief Application of the numerical scheme for pressure update
  *
- * @param simdata [INOUT] a simulation data object used to get the input and
+ * @param psimdata [INOUT] a simulation data object used to get the input and
  * store result of the update step
  * @param m [IN] first index
  * @param n [IN] second index
  * @param p [IN] third index
  */
-void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p, double dtdx);
+void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p);
 
 /**
  * @brief Perform the velocities update step
  *
- * @param simdata [INOUT] a simulation data object used to get the input and
+ * @param psimdata [INOUT] a simulation data object used to get the input and
  * store result of the update step
  */
-void update_velocities(simulation_data_t *simdata);
+void update_velocities(process_simulation_data_t *psimdata);
+
+/**
+ * @brief Application of the numerical scheme for velocity update
+ *
+ * @param psimdata [INOUT] a simulation data object used to get the input and
+ * store result of the update step
+ * @param m [IN] first index
+ * @param n [IN] second index
+ * @param p [IN] third index
+ */
+void update_velocity_routine(process_simulation_data_t *psimdata, int m, int n, int p);
 
 /**
  * @brief Initialize the simulation

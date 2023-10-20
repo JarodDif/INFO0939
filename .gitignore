@@ -2,6 +2,8 @@
 **/out_*.dat
 **/*.msh
 **/*.out
+#Exclude backtraces
+**/*.btr
 # Exclude built binary
 fdtd
 fdtd_*
