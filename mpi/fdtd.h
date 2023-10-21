@@ -124,6 +124,12 @@ typedef enum output_type {
 
 } output_type_t;
 
+typedef struct limit{
+  int start;
+  int end;
+  int n;
+} limit_t;
+
 typedef struct grid {
   int numnodesx;
   int numnodesy;
