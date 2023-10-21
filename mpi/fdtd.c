@@ -8,8 +8,6 @@ int dims[3];
 int coords[3];
 int neighbors[6];
 
-
-
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   
@@ -447,9 +445,9 @@ void fill_data(process_data_t *pdata, double value) {
 }
 
 process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags) {
-  int pnumnodesx = grid->endm - grid->startm + 1, 
-    pnumnodesy = grid->endn - grid->startn + 1, 
-    pnumnodesz = grid->endp - grid->startp + 1;
+  int pnumnodesx = grid->lm.n, 
+    pnumnodesy = grid->ln.n, 
+    pnumnodesz = grid->lp.n;
   size_t numnodes = pnumnodesx*pnumnodesy*pnumnodesz;
   if (numnodes <= 0) {
     DEBUG_PRINTF("Invalid number of nodes (%lu)", numnodes);
@@ -1072,9 +1070,9 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
   double dx = psimdata->params.dx;
   double dxd2 = psimdata->params.dx / 2;
 
-  for (int p = psimgrid->startp; p <= psimgrid->endp; p++) {
-    for (int n = psimgrid->startn; n <= psimgrid->endn; n++) {
-      for (int m = psimgrid->startm; m <= psimgrid->endm; m++) {
+  for (int p = psimgrid->lp.start; p <= psimgrid->lp.end; p++) {
+    for (int n = psimgrid->ln.start; n <= psimgrid->ln.end; n++) {
+      for (int m = psimgrid->lm.start; m <= psimgrid->lm.end; m++) {
 
         double x = m * dx;
         double y = n * dx;
@@ -1333,13 +1331,12 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
 
   //Set correct value ranges
   psim_grid.gnumx = numnodesx; psim_grid.gnumy = numnodesy; psim_grid.gnumz = numnodesz;
-  psim_grid.startm = numnodesx*coords[0]/dims[0]; psim_grid.endm = numnodesx*(coords[0]+1)/dims[0] - 1;
-  psim_grid.startn = numnodesy*coords[1]/dims[1]; psim_grid.endn = numnodesy*(coords[1]+1)/dims[1] - 1;
-  psim_grid.startp = numnodesz*coords[2]/dims[2]; psim_grid.endp = numnodesz*(coords[2]+1)/dims[2] - 1;
-
-  int l_numnodesx = psim_grid.endm - psim_grid.startm + 1,
-    l_numnodesy = psim_grid.endn - psim_grid.startn + 1,
-    l_numnodesz = psim_grid.endp - psim_grid.startp + 1;
+  psim_grid.lm.start = numnodesx*coords[0]/dims[0]; psim_grid.lm.end = numnodesx*(coords[0]+1)/dims[0] - 1;
+  psim_grid.lm.n = psim_grid.lm.end - psim_grid.lm.start + 1;
+  psim_grid.ln.start = numnodesy*coords[1]/dims[1]; psim_grid.ln.end = numnodesy*(coords[1]+1)/dims[1] - 1;
+  psim_grid.ln.n = psim_grid.ln.end - psim_grid.ln.start + 1;
+  psim_grid.lp.start = numnodesz*coords[2]/dims[2]; psim_grid.lp.end = numnodesz*(coords[2]+1)/dims[2] - 1;
+  psim_grid.lp.n = psim_grid.lp.end - psim_grid.lp.start + 1;
 
   if (interpolate_inputmaps(psimdata, &psim_grid, c_map, rho_map) != 0) {
     printf(
@@ -1350,8 +1347,8 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   DEBUG_PRINT("Interpolate Inputmaps OK");
 
   DEBUG_PRINTF("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n\tcvalue %10.5lf at (%3d, %3d, %3d)\n",
-    cart_rank, psim_grid.startm, psim_grid.endm, psim_grid.startn, psim_grid.endn, psim_grid.startp, psim_grid.endp,
-    psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.startm, psim_grid.startn, psim_grid.startp);
+    cart_rank, psim_grid.lm.start, psim_grid.lm.end, psim_grid.ln.start, psim_grid.ln.end, psim_grid.lp.start, psim_grid.lp.end,
+    psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.lm.start, psim_grid.ln.start, psim_grid.lp.start);
 
   if (cart_rank == 0){
     if (psimdata->params.outrate > 0 && psimdata->params.outputs != NULL) {
@@ -1389,12 +1386,12 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
       (psimdata->vynew = allocate_pdata(&psim_grid, 0b000100)) == NULL ||
       (psimdata->vzold = allocate_pdata(&psim_grid, 0b010000)) == NULL ||
       (psimdata->vznew = allocate_pdata(&psim_grid, 0b010000)) == NULL ||
-      (psimdata->buffer_vx = malloc(l_numnodesy*l_numnodesz*sizeof(double))) == NULL ||
-      (psimdata->buffer_vy = malloc(l_numnodesx*l_numnodesz*sizeof(double))) == NULL ||
-      (psimdata->buffer_vz = malloc(l_numnodesx*l_numnodesy*sizeof(double))) == NULL ||
-      (psimdata->buffer_px = malloc(l_numnodesy*l_numnodesz*sizeof(double))) == NULL ||
-      (psimdata->buffer_py = malloc(l_numnodesx*l_numnodesz*sizeof(double))) == NULL ||
-      (psimdata->buffer_pz = malloc(l_numnodesx*l_numnodesy*sizeof(double))) == NULL) {
+      (psimdata->buffer_vx = malloc(psim_grid.ln.n * psim_grid.lp.n * sizeof(double))) == NULL ||
+      (psimdata->buffer_vy = malloc(psim_grid.lm.n * psim_grid.lp.n * sizeof(double))) == NULL ||
+      (psimdata->buffer_vz = malloc(psim_grid.lm.n * psim_grid.ln.n * sizeof(double))) == NULL ||
+      (psimdata->buffer_px = malloc(psim_grid.ln.n * psim_grid.lp.n * sizeof(double))) == NULL ||
+      (psimdata->buffer_py = malloc(psim_grid.lm.n * psim_grid.lp.n * sizeof(double))) == NULL ||
+      (psimdata->buffer_pz = malloc(psim_grid.lm.n * psim_grid.ln.n * sizeof(double))) == NULL) {
     printf("Failed to allocate memory. Aborting...\n\n");
     MPI_Abort(cart_comm, MPI_ERR_NO_MEM);
   }

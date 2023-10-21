@@ -57,17 +57,17 @@
   ((dat)->vals[INDEX3D((dat)->grid, m, n, p)] = (val))
 
 // custom process_data_t MACROS 
-#define PNUMNODESX(pdat) ((pdat)->grid.endm - (pdat)->grid.startm + 1)
-#define PNUMNODESY(pdat) ((pdat)->grid.endn - (pdat)->grid.startn + 1)
-#define PNUMNODESZ(pdat) ((pdat)->grid.endp - (pdat)->grid.startp + 1)
+#define PNUMNODESX(pdat) ((pdat)->grid.lm.n)
+#define PNUMNODESY(pdat) ((pdat)->grid.ln.n)
+#define PNUMNODESZ(pdat) ((pdat)->grid.lp.n)
 
-#define STARTM(pdat) ((pdat)->grid.startm)
-#define STARTN(pdat) ((pdat)->grid.startn)
-#define STARTP(pdat) ((pdat)->grid.startp)
+#define STARTM(pdat) ((pdat)->grid.lm.start)
+#define STARTN(pdat) ((pdat)->grid.ln.start)
+#define STARTP(pdat) ((pdat)->grid.lp.start)
 
-#define ENDM(pdat) ((pdat)->grid.endm)
-#define ENDN(pdat) ((pdat)->grid.endn)
-#define ENDP(pdat) ((pdat)->grid.endp)
+#define ENDM(pdat) ((pdat)->grid.lm.end)
+#define ENDN(pdat) ((pdat)->grid.ln.end)
+#define ENDP(pdat) ((pdat)->grid.lp.end)
 
 #ifdef _OPENMP
 
@@ -150,9 +150,7 @@ typedef struct grid {
  * does not need *min / *max as we only need dx to locate ourselves
 */
 typedef struct process_grid {
-  int startm, endm;
-  int startn, endn;
-  int startp, endp;
+  limit_t lm, ln, lp;
 
   int gnumx, gnumy, gnumz;
 } process_grid_t;
