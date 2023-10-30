@@ -37,8 +37,8 @@ int main(int argc, char *argv[]) {
 		&neighbors[DOWN], &neighbors[UP]);
 
 
-  process_simulation_data_t simdata;
-  init_simulation(&simdata, argv[1]);
+  process_simulation_data_t psimdata;
+  init_simulation(&psimdata, argv[1]);
 
   limit_t **process_boundaries;
   int *recv_sizes, *displacements;
@@ -47,15 +47,15 @@ int main(int argc, char *argv[]) {
 
   if(cart_rank == 0){
     int rank_coords[3];
-    int num[3] = {simdata.global_grid.numnodesx, 
-      simdata.global_grid.numnodesy, 
-      simdata.global_grid.numnodesz};
+    int num[3] = {psimdata.global_grid.numnodesx, 
+                  psimdata.global_grid.numnodesy, 
+                  psimdata.global_grid.numnodesz};
     
     if((process_boundaries = malloc(sizeof(limit_t*) * world_size)) == NULL ||
-      (recv_sizes = malloc(sizeof(int)*world_size)) == NULL ||
-      (displacements = malloc(sizeof(int)*world_size)) == NULL ||
-      (receive_data_buffer = malloc(sizeof(double) * NUMNODESTOT(simdata.global_grid))) == NULL ||
-      (output_reordered = allocate_data(&simdata.global_grid)) == NULL){
+       (recv_sizes = malloc(sizeof(int)*world_size)) == NULL ||
+       (displacements = malloc(sizeof(int)*world_size)) == NULL ||
+       (receive_data_buffer = malloc(sizeof(double) * NUMNODESTOT(psimdata.global_grid))) == NULL ||
+       (output_reordered = allocate_data(&psimdata.global_grid)) == NULL){
       printf("Could not allocate memory. Aborting...\n");
       MPI_Abort(cart_comm, MPI_ERR_NO_MEM);
     }
@@ -67,8 +67,8 @@ int main(int argc, char *argv[]) {
         printf("Could not allocate memory. Aborting...\n");
         MPI_Abort(cart_comm, MPI_ERR_NO_MEM);
       }
-      recv_sizes[r] = 1;
 
+      recv_sizes[r] = 1;
       MPI_Cart_coords(cart_comm, r, 3, rank_coords);
 
       for(int i=0; i < 3; i++){
@@ -82,64 +82,63 @@ int main(int argc, char *argv[]) {
       else displacements[r] = displacements[r-1] + recv_sizes[r-1];
     }
 
-    if(NUMNODESTOT(simdata.global_grid) != allSizes){
+    if(NUMNODESTOT(psimdata.global_grid) != allSizes){
       printf("Allocation sizes do not match. Aborting...\n");
       MPI_Abort(cart_comm, MPI_ERR_SIZE);
     }
   }
 
-  int numtimesteps = floor(simdata.params.maxt / simdata.params.dt);
+  int numtimesteps = floor(psimdata.params.maxt / psimdata.params.dt);
 
   double start = GET_TIME();
   for (int tstep = 0; tstep <= numtimesteps; tstep++) {
-    apply_source(&simdata, tstep);
+    apply_source(&psimdata, tstep);
 
     // Need to collect data from all the different processes
-    if (simdata.params.outrate > 0 && (tstep % simdata.params.outrate) == 0) {
-      int send_count = PNUMNODESX(simdata.pold)*PNUMNODESY(simdata.pold)*PNUMNODESZ(simdata.pold);
-      for (int i = 0; i < simdata.params.numoutputs; i++) {
+    if (psimdata.params.outrate > 0 && (tstep % psimdata.params.outrate) == 0) {
+      int send_size = PNUMNODESX(psimdata.pold)*PNUMNODESY(psimdata.pold)*PNUMNODESZ(psimdata.pold);
+      for (int i = 0; i < psimdata.params.numoutputs; i++) {
         process_data_t *output_data = NULL;
 
-        switch (simdata.params.outputs[i].source) {
-        case PRESSURE:
-          output_data = simdata.pold;
-          break;
-        case VELOCITYX:
-          output_data = simdata.vxold;
-          break;
-        case VELOCITYY:
-          output_data = simdata.vyold;
-          break;
-        case VELOCITYZ:
-          output_data = simdata.vzold;
-          break;
+        switch (psimdata.params.outputs[i].source) {
+          case PRESSURE:
+            output_data = psimdata.pold;
+            break;
+          case VELOCITYX:
+            output_data = psimdata.vxold;
+            break;
+          case VELOCITYY:
+            output_data = psimdata.vyold;
+            break;
+          case VELOCITYZ:
+            output_data = psimdata.vzold;
+            break;
 
-        default:
-          break;
+          default:
+            break;
         }
 
-        MPI_Gatherv(output_data->vals, send_count, MPI_DOUBLE,
+        MPI_Gatherv(output_data->vals, send_size, MPI_DOUBLE,
           receive_data_buffer, recv_sizes, displacements, MPI_DOUBLE,
           0, cart_comm);
 
         if(cart_rank == 0){
-
           for(int r = 0; r < world_size; r++){
             for(int pbar = 0; pbar < process_boundaries[r][2].n; pbar++){
               for(int nbar = 0; nbar < process_boundaries[r][1].n; nbar++){
                 for(int mbar = 0; mbar < process_boundaries[r][0].n; mbar++){
                   SETVALUE(output_reordered, 
-                    mbar+process_boundaries[r][0].start,
-                    nbar+process_boundaries[r][1].start,
-                    pbar+process_boundaries[r][2].start,
+                    process_boundaries[r][0].start + mbar,
+                    process_boundaries[r][1].start + nbar,
+                    process_boundaries[r][2].start + pbar,
                     receive_data_buffer[displacements[r]+pbar*process_boundaries[r][1].n*process_boundaries[r][0].n + nbar * process_boundaries[r][0].n + mbar]);
                 }
               }
             }
           }
 
-          double time = tstep * simdata.params.dt;
-          write_output(&simdata.params.outputs[i], output_reordered, tstep, time);
+          double time = tstep * psimdata.params.dt;
+          write_output(&psimdata.params.outputs[i], output_reordered, tstep, time);
         }
       }
     }
@@ -162,15 +161,15 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    update_pressure(&simdata);
-    update_velocities(&simdata);
-    swap_timesteps(&simdata);
+    update_pressure(&psimdata);
+    update_velocities(&psimdata);
+    swap_timesteps(&psimdata);
   }
 
   if(cart_rank == 0){
     double elapsed = GET_TIME() - start;
     double numupdates =
-        (double)NUMNODESTOT(simdata.global_grid) * (numtimesteps + 1);
+        (double)NUMNODESTOT(psimdata.global_grid) * (numtimesteps + 1);
     double updatespers = numupdates / elapsed / 1e6;
     printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed, updatespers);
   }
@@ -186,7 +185,7 @@ int main(int argc, char *argv[]) {
     free(output_reordered->vals); free(output_reordered);
   }
 
-  finalize_simulation(&simdata);
+  finalize_simulation(&psimdata);
 
   MPI_Finalize();
 
@@ -380,8 +379,8 @@ double process_getvalue(process_data_t *pdata, int m, int n, int p) {
   }
 
   if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
-    nbar >= 0 && nbar <= pnumnodesy - 1 && 
-    pbar >= 0 && pbar <= pnumnodesz - 1){
+     nbar >= 0 && nbar <= pnumnodesy - 1 && 
+     pbar >= 0 && pbar <= pnumnodesz - 1){
     return pdata->vals[pbar*pnumnodesy*pnumnodesx + nbar*pnumnodesx + mbar];
   }
   else if(nbar >= 0 && nbar <= pnumnodesy - 1 &&
@@ -446,8 +445,8 @@ void fill_data(process_data_t *pdata, double value) {
 
 process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags) {
   int pnumnodesx = grid->lm.n, 
-    pnumnodesy = grid->ln.n, 
-    pnumnodesz = grid->lp.n;
+      pnumnodesy = grid->ln.n, 
+      pnumnodesz = grid->lp.n;
   size_t numnodes = pnumnodesx*pnumnodesy*pnumnodesz;
   if (numnodes <= 0) {
     DEBUG_PRINTF("Invalid number of nodes (%lu)", numnodes);
@@ -460,8 +459,6 @@ process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags) {
     free(pdata);
     return NULL;
   }
-
-  pdata->malloc_ghost_flags = malloc_ghost_flags;
 
   if ((pdata->vals = malloc(numnodes * sizeof(double))) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
@@ -477,6 +474,8 @@ process_data_t *allocate_pdata(process_grid_t *grid, int malloc_ghost_flags) {
     free(pdata);
     return NULL;
   }
+
+  pdata->malloc_ghost_flags = malloc_ghost_flags;
 
   for(int i=0; i < NEIGHBOR_TYPE_END; ++i){
     // Only allocate asked ghost cells
@@ -1179,11 +1178,13 @@ void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, 
 
 void update_velocities(process_simulation_data_t *psimdata) {
   
-  process_data_t *vxold = psimdata->vxold, *vyold = psimdata->vyold, *vzold = psimdata->vzold;
   MPI_Request request_recv[3], request_send[3];
+  register process_data_t *vxold = psimdata->vxold;
 
   int mbar, nbar, pbar;
-  register const int pnumnodesx = PNUMNODESX(vxold), pnumnodesy = PNUMNODESY(vxold), pnumnodesz = PNUMNODESZ(vxold);
+  register const int pnumnodesx = PNUMNODESX(vxold), startm = STARTM(vxold), endm = ENDM(vxold),
+                     pnumnodesy = PNUMNODESY(vxold), startn = STARTN(vxold), endn = ENDN(vxold),
+                     pnumnodesz = PNUMNODESZ(vxold), startp = STARTP(vxold), endp = ENDP(vxold);
 
   MPI_Irecv(psimdata->pnew->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_recv[0]);
   MPI_Irecv(psimdata->pnew->ghostvals[BACK ], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_recv[1]);
@@ -1191,17 +1192,17 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (nbar = 0; nbar < pnumnodesy; nbar++){
-      psimdata->buffer_px[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->pnew, STARTM(vxold), nbar + STARTN(vxold), pbar + STARTP(vxold));
+      psimdata->buffer_px[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->pnew, startm, nbar + startn, pbar + startp);
     }
   }
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_py[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + STARTM(vxold), STARTN(vxold), pbar + STARTP(vxold));
+      psimdata->buffer_py[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + startm, startn, pbar + startp);
     }
   }
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + STARTM(vxold), nbar + STARTN(vxold), STARTP(vxold));
+      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + startm, nbar + startn, startp);
     }
   }
 
@@ -1209,9 +1210,9 @@ void update_velocities(process_simulation_data_t *psimdata) {
   MPI_Isend(psimdata->buffer_py, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
   MPI_Isend(psimdata->buffer_pz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_send[2]);
 
-  for (pbar = STARTP(vxold); pbar <= ENDP(vxold) - 1; pbar++) {
-    for (nbar = STARTN(vxold); nbar <= ENDN(vxold) - 1; nbar++) {
-      for (mbar = STARTM(vxold); mbar <= ENDM(vxold) - 1; mbar++) {
+  for (pbar = startp; pbar <= endp - 1; pbar++) {
+    for (nbar = startn; nbar <= endn - 1; nbar++) {
+      for (mbar = startm; mbar <= endm - 1; mbar++) {
         update_velocity_routine(psimdata, mbar, nbar, pbar);
       }
     }
@@ -1219,21 +1220,21 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  for (pbar = STARTP(vxold); pbar <= ENDP(vxold); pbar++) {
-    for (nbar = STARTN(vxold); nbar <= ENDN(vxold); nbar++) {
-      update_velocity_routine(psimdata, ENDM(vxold), nbar, pbar);
+  for (pbar = startp; pbar <= endp; pbar++) {
+    for (nbar = startn; nbar <= endn; nbar++) {
+      update_velocity_routine(psimdata, endm, nbar, pbar);
     }
   }
 
-  for (pbar = STARTP(vxold); pbar <= ENDP(vxold); pbar++) {
-    for (mbar = STARTM(vxold); mbar < ENDM(vxold); mbar++) {
-      update_velocity_routine(psimdata, mbar, ENDN(vxold), pbar);
+  for (pbar = startp; pbar <= endp; pbar++) {
+    for (mbar = startm; mbar < endm; mbar++) {
+      update_velocity_routine(psimdata, mbar, endn, pbar);
     }
   }
 
-  for (nbar = STARTN(vxold); nbar < ENDN(vxold); nbar++){
-    for (mbar = STARTM(vxold); mbar < ENDM(vxold); mbar++){
-      update_velocity_routine(psimdata, mbar, nbar, ENDP(vxold));
+  for (nbar = startn; nbar < endn; nbar++){
+    for (mbar = startm; mbar < endm; mbar++){
+      update_velocity_routine(psimdata, mbar, nbar, endp);
     }
   }
 
@@ -1365,7 +1366,7 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
         }
       }
 
-      for (int i = 0; i < psimdata->params.numoutputs ; i++) {
+      for (int i = 0; i < psimdata->params.numoutputs; i++) {
         output_t *output = &psimdata->params.outputs[i];
 
         if (open_outputfile(output, &psimdata->global_grid) != 0) {
@@ -1441,49 +1442,48 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     fflush(stdout);
   }
 
-
   free(rho_map->vals);
   free(rho_map);
   free(c_map->vals);
   free(c_map);
 }
 
-void finalize_simulation(process_simulation_data_t *simdata) {
-  if (simdata->params.outputs != NULL) {
-    for (int i = 0; i < simdata->params.numoutputs; i++) {
-      free(simdata->params.outputs[i].filename);
+void finalize_simulation(process_simulation_data_t *psimdata) {
+  if (psimdata->params.outputs != NULL) {
+    for (int i = 0; i < psimdata->params.numoutputs; i++) {
+      free(psimdata->params.outputs[i].filename);
       
-      if (cart_rank == 0 && simdata->params.outrate > 0) {
-        fclose(simdata->params.outputs[i].fp);
+      if (cart_rank == 0 && psimdata->params.outrate > 0) {
+        fclose(psimdata->params.outputs[i].fp);
       }
     }
 
-    free(simdata->params.outputs);
+    free(psimdata->params.outputs);
   }
 
-  free(simdata->params.source.data);
-  free(simdata->params.cin_filename);
-  free(simdata->params.rhoin_filename);
+  free(psimdata->params.source.data);
+  free(psimdata->params.cin_filename);
+  free(psimdata->params.rhoin_filename);
 
-  free_pdata(simdata->rho);
-  free_pdata(simdata->rhohalf);
-  free_pdata(simdata->c);
+  free_pdata(psimdata->rho);
+  free_pdata(psimdata->rhohalf);
+  free_pdata(psimdata->c);
 
-  free_pdata(simdata->pold);
-  free_pdata(simdata->pnew);
-  free_pdata(simdata->vxold);
-  free_pdata(simdata->vyold);
-  free_pdata(simdata->vzold);
-  free_pdata(simdata->vxnew);
-  free_pdata(simdata->vynew);
-  free_pdata(simdata->vznew);
+  free_pdata(psimdata->pold);
+  free_pdata(psimdata->pnew);
+  free_pdata(psimdata->vxold);
+  free_pdata(psimdata->vyold);
+  free_pdata(psimdata->vzold);
+  free_pdata(psimdata->vxnew);
+  free_pdata(psimdata->vynew);
+  free_pdata(psimdata->vznew);
 
-  free(simdata->buffer_vx);
-  free(simdata->buffer_vy);
-  free(simdata->buffer_vz);
-  free(simdata->buffer_px);
-  free(simdata->buffer_py);
-  free(simdata->buffer_pz);
+  free(psimdata->buffer_vx);
+  free(psimdata->buffer_vy);
+  free(psimdata->buffer_vz);
+  free(psimdata->buffer_px);
+  free(psimdata->buffer_py);
+  free(psimdata->buffer_pz);
 }
 
 void swap_timesteps(process_simulation_data_t *psimdata) {
