@@ -779,6 +779,7 @@ int interpolate_inputmaps(simulation_data_t *simdata, grid_t *simgrid,
   double dx = simdata->params.dx;
   double dxd2 = simdata->params.dx / 2;
 
+  #pragma parallel for collapse(NCOLLAPSE)
   for (int p = 0; p < simgrid->numnodesz; p++) {
     for (int n = 0; n < simgrid->numnodesy; n++) {
       for (int m = 0; m < simgrid->numnodesx; m++) {
@@ -833,7 +834,7 @@ void update_pressure(simulation_data_t *simdata) {
   const int numnodesy = NUMNODESY(simdata->pold);
   const int numnodesz = NUMNODESZ(simdata->pold);
 
-  #pragma omp parallel for collapse(3)
+  #pragma omp parallel for collapse(NCOLLAPSE)
   for (int p = 0; p < numnodesz; p++) {
     for (int n = 0; n < numnodesy; n++) {
       for (int m = 0; m < numnodesx; m++) {
@@ -866,7 +867,7 @@ void update_velocities(simulation_data_t *simdata) {
   const int numnodesy = NUMNODESY(simdata->vxold);
   const int numnodesz = NUMNODESZ(simdata->vxold);
 
-  #pragma omp parallel for collapse(3)
+  #pragma omp parallel for collapse(NCOLLAPSE)
   for (int p = 0; p < numnodesz; p++) {
     for (int n = 0; n < numnodesy; n++) {
       for (int m = 0; m < numnodesx; m++) {
