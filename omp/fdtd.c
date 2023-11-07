@@ -246,7 +246,8 @@ void fill_data(data_t *data, double value) {
     DEBUG_PRINT("Invalid NULL data");
     return;
   }
-
+  // First touch policy enforcement
+  #pragma omp parallel for collapse(NCOLLAPSE)
   for (int p = 0; p < NUMNODESZ(data); p++) {
     for (int n = 0; n < NUMNODESY(data); n++) {
       for (int m = 0; m < NUMNODESX(data); m++) {
