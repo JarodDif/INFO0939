@@ -1,0 +1,11 @@
+7.5e-3
+1.2162162162162164e-05
+0.006081081081081081
+200
+in_c_3d.dat
+in_rho_3d.dat
+sine 3400 0.5 0.5 0.5
+all pressure out_p.dat
+all velocity_x out_vx.dat
+all velocity_y out_vy.dat
+all velocity_z out_vz.dat

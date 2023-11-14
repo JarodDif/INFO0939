@@ -16,7 +16,7 @@ def read_double(f):
     return struct.unpack("d", b)[0]
 
 
-with open("mpi/example_inputs/simple3d/in_c_custom.dat", "rb") as f:
+with open("default/example_inputs/stability_test/in_c_3d.dat", "rb") as f:
     dims = read_int(f), read_int(f), read_int(f)
     print("Dimensions :", dims)
 
