@@ -320,63 +320,10 @@ void print_output(output_t *output) {
   printf(" to file %s\n", output->filename);
 }
 
-int process_setvalue(process_data_t *pdata, int m, int n, int p, double val) {
-  //Verify we are inside the boundaries of the whole grid
-  if(m < 0 || m >= pdata->grid.gnumx ||
-     n < 0 || n >= pdata->grid.gnumy ||
-     p < 0 || p >= pdata->grid.gnumz) {
-    return 1;
-  }
-
-  int mbar = m - STARTM(pdata), nbar = n - STARTN(pdata), pbar = p - STARTP(pdata);
-  int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
-
-  //Verify we are in the boundaries of the current subdomain
-  if(mbar < -1 || mbar > pnumnodesx ||
-      nbar < -1 || nbar > pnumnodesy ||
-      pbar < -1 || pbar > pnumnodesz) {
-    return 1;
-  }
-
-  if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
-      nbar >= 0 && nbar <= pnumnodesy - 1 &&
-      pbar >= 0 && pbar <= pnumnodesz - 1) {
-    pdata->vals[pbar*pnumnodesy*pnumnodesx + nbar*pnumnodesx + mbar] = val;
-  }
-  else if(nbar >= 0 && nbar <= pnumnodesy - 1 &&
-          pbar >= 0 && pbar <= pnumnodesz - 1) {
-    pdata->ghostvals[(mbar == -1)?LEFT:RIGHT][pbar*pnumnodesy + nbar] = val;
-  }
-  else if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
-          pbar >= 0 && pbar <= pnumnodesz - 1) {
-    pdata->ghostvals[(nbar == -1)?FRONT:BACK][pbar*pnumnodesx + mbar] = val;
-  }
-  else if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
-          nbar >= 0 && nbar <= pnumnodesy - 1) {
-    pdata->ghostvals[(pbar == -1)?DOWN:UP][nbar*pnumnodesx + mbar] = val;
-  }
-  else{ return 1; }
-
-  return 0;
-}
-
-double process_getvalue(process_data_t *pdata, int m, int n, int p) {
-  //Verify we are inside the boundaries
-  if(m < 0 || m >= pdata->grid.gnumx ||
-     n < 0 || n >= pdata->grid.gnumy ||
-     p < 0 || p >= pdata->grid.gnumz) {
-    return 0.0;
-  }
+inline double process_getvalue(process_data_t *pdata, int m, int n, int p) {
   
   int mbar = m - STARTM(pdata), nbar = n - STARTN(pdata), pbar = p - STARTP(pdata);
   int pnumnodesx = PNUMNODESX(pdata), pnumnodesy = PNUMNODESY(pdata), pnumnodesz = PNUMNODESZ(pdata);
-
-  //Verify we are in the boundaries of the current subdomain
-  if(mbar < -1 || mbar > pnumnodesx ||
-      nbar < -1 || nbar > pnumnodesy ||
-      pbar < -1 || pbar > pnumnodesz) {
-    return 0.0;
-  }
 
   if(mbar >= 0 && mbar <= pnumnodesx - 1 &&
      nbar >= 0 && nbar <= pnumnodesy - 1 && 
@@ -395,8 +342,6 @@ double process_getvalue(process_data_t *pdata, int m, int n, int p) {
           nbar >= 0 && nbar <= pnumnodesy - 1) {
     return pdata->ghostvals[(pbar == -1)?DOWN:UP][nbar*pnumnodesx + mbar];
   }
-
-  return 0.0;
 }
 
 /******************************************************************************
@@ -434,10 +379,10 @@ void fill_data(process_data_t *pdata, double value) {
     return;
   }
 
-  for (int p = STARTP(pdata); p <= ENDP(pdata); p++) {
-    for (int n = STARTN(pdata); n <= ENDN(pdata); n++) {
-      for (int m = STARTM(pdata); m <= ENDM(pdata); m++) {
-        process_setvalue(pdata, m, n, p, value);
+  for (int pbar = 0; pbar < PNUMNODESX(pdata); pbar++) {
+    for (int nbar = 0; nbar < PNUMNODESY(pdata); nbar++) {
+      for (int mbar = 0; mbar < PNUMNODESZ(pdata); mbar++) {
+        PROCESS_SETVALUE_INSIDE(pdata, mbar, nbar, pbar, value);
       }
     }
   }
@@ -1020,33 +965,36 @@ int read_paramfile(parameters_t *params, const char *filename) {
 /******************************************************************************
  * Simulation-related functions                                               *
  ******************************************************************************/
-void apply_source(process_simulation_data_t *simdata, int step) {
-  source_t *source = &simdata->params.source;
+void apply_source(process_simulation_data_t *psimdata, int step) {
+  source_t *source = &psimdata->params.source;
 
   double posx = source->posx;
   double posy = source->posy;
   double posz = source->posz;
 
-  double t = step * simdata->params.dt;
+  double t = step * psimdata->params.dt;
 
   int m, n, p;
-  closest_index(&simdata->global_grid, posx, posy, posz, &m, &n, &p);
+  closest_index(&psimdata->global_grid, posx, posy, posz, &m, &n, &p);
 
-  if(m < STARTM(simdata->pold) || m > ENDM(simdata->pold) ||
-    n < STARTN(simdata->pold) || n > ENDN(simdata->pold) ||
-    p < STARTP(simdata->pold) || p > ENDP(simdata->pold)){
+  register process_data_t *pold = psimdata->pold;
+  const register int mbar = m - STARTM(pold), nbar = n - STARTN(pold), pbar = p - STARTP(pold);
+
+  if(mbar < 0 || mbar > PNUMNODESX(pold)-1 ||
+     nbar < 0 || nbar > PNUMNODESY(pold)-1 ||
+     pbar < 0 || pbar > PNUMNODESZ(pold)-1){
     return;
   }
 
   if (source->type == SINE) {
     double freq = source->data[0];
 
-    process_setvalue(simdata->pold, m, n, p, sin(2 * M_PI * freq * t));
+    PROCESS_SETVALUE_INSIDE(pold, mbar, nbar, pbar, sin(2 * M_PI * freq * t));
 
   } else if (source->type == AUDIO) {
     int sample = MIN((int)(t * source->sampling), source->numsamples);
 
-    process_setvalue(simdata->pold, m, n, p, simdata->params.source.data[sample]);
+    PROCESS_SETVALUE_INSIDE(pold, mbar, nbar, pbar, psimdata->params.source.data[sample]);
   }
 }
 
@@ -1069,22 +1017,17 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
   double dx = psimdata->params.dx;
   double dxd2 = psimdata->params.dx / 2;
 
-  for (int p = psimgrid->lp.start; p <= psimgrid->lp.end; p++) {
-    for (int n = psimgrid->ln.start; n <= psimgrid->ln.end; n++) {
-      for (int m = psimgrid->lm.start; m <= psimgrid->lm.end; m++) {
+  for (int pbar = 0; pbar < psimgrid->lp.n; pbar++) {
+    for (int nbar = 0; nbar < psimgrid->ln.n; nbar++) {
+      for (int mbar = 0; mbar < psimgrid->lm.n; mbar++) {
 
-        double x = m * dx;
-        double y = n * dx;
-        double z = p * dx;
+        double x = (mbar + psimgrid->lm.start) * dx;
+        double y = (nbar + psimgrid->ln.start) * dx;
+        double z = (pbar + psimgrid->lp.start) * dx;
 
-        process_setvalue(psimdata->c, m, n, p, trilinear_interpolation(cin, x,y,z));
-        process_setvalue(psimdata->rho, m, n, p, trilinear_interpolation(rhoin, x,y,z));
-
-        x += dxd2;
-        y += dxd2;
-        z += dxd2;
-
-        process_setvalue(psimdata->rhohalf, m, n, p, trilinear_interpolation(rhoin, x,y,z));
+        PROCESS_SETVALUE_INSIDE(psimdata->c      , mbar, nbar, pbar, trilinear_interpolation(cin, x,y,z));
+        PROCESS_SETVALUE_INSIDE(psimdata->rho    , mbar, nbar, pbar, trilinear_interpolation(rhoin, x,y,z));
+        PROCESS_SETVALUE_INSIDE(psimdata->rhohalf, mbar, nbar, pbar, trilinear_interpolation(rhoin, x+dxd2, y+dxd2, z+dxd2));
       }
     }
   }
@@ -1098,8 +1041,11 @@ void update_pressure(process_simulation_data_t *psimdata) {
   process_data_t *pold = psimdata->pold;
   MPI_Request request_recv[3], request_send[3];
 
+  int m, n, p;
   int mbar, nbar, pbar;
-  register const int pnumnodesx = PNUMNODESX(pold), pnumnodesy = PNUMNODESY(pold), pnumnodesz = PNUMNODESZ(pold);
+  register const int pnumnodesx = PNUMNODESX(pold), startm = STARTM(pold), endm = ENDM(pold),
+                     pnumnodesy = PNUMNODESY(pold), startn = STARTN(pold), endn = ENDN(pold),
+                     pnumnodesz = PNUMNODESZ(pold), startp = STARTP(pold), endp = ENDP(pold);
 
   MPI_Irecv(psimdata->vxold->ghostvals[LEFT ], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_recv[0]);
   MPI_Irecv(psimdata->vyold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_recv[1]);
@@ -1107,17 +1053,17 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (nbar = 0; nbar < pnumnodesy; nbar++){
-      psimdata->buffer_vx[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->vxold, ENDM(pold), nbar + STARTN(pold), pbar + STARTP(pold));
+      psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
     }
   }
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_vy[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->vyold, mbar + STARTM(pold), ENDN(pold), pbar + STARTP(pold));
+      psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
     }
   }
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_vz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->vzold, mbar + STARTM(pold), nbar + STARTN(pold), ENDP(pold));
+      psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
     }
   }
 
@@ -1125,55 +1071,73 @@ void update_pressure(process_simulation_data_t *psimdata) {
   MPI_Isend(psimdata->buffer_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
   MPI_Isend(psimdata->buffer_vz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_send[2]);
 
-  for (pbar = STARTP(pold) + 1; pbar <= ENDP(pold); pbar++) {
-    for (nbar = STARTN(pold) + 1; nbar <= ENDN(pold); nbar++) {
-      for (mbar = STARTM(pold) + 1; mbar <= ENDM(pold); mbar++) {
-        update_pressure_routine(psimdata, mbar, nbar, pbar);
+  for (p = startp + 1; p <= endp; p++) {
+    for (n = startn + 1; n <= endn; n++) {
+      for (m = startm + 1; m <= endm; m++) {
+        update_pressure_routine_inside(psimdata, m, n, p);
       }
     }
   }
 
   MPI_Waitall(3, request_recv, MPI_STATUSES_IGNORE);
 
-  for (pbar = STARTP(pold); pbar <= ENDP(pold); pbar++) {
-    for (nbar = STARTN(pold); nbar <= ENDN(pold); nbar++) {
-      update_pressure_routine(psimdata, STARTM(pold), nbar, pbar);
+  for (p = startp; p <= endp; p++) {
+    for (n = startn; n <= endn; n++) {
+      update_pressure_routine(psimdata, startm, n, p, LEFT);
     }
   }
 
-  for (pbar = STARTP(pold); pbar <= ENDP(pold); pbar++) {
-    for (mbar = STARTM(pold) + 1; mbar <= ENDM(pold); mbar++) {
-      update_pressure_routine(psimdata, mbar, STARTN(pold), pbar);
+  for (p = startp; p <= endp; p++) {
+    for (m = startm + 1; m <= endm; m++) {
+      update_pressure_routine(psimdata, m, startn, p, FRONT);
     }
   }
 
-  for (nbar = STARTN(pold) + 1; nbar <= ENDN(pold); nbar++){
-    for (mbar = STARTM(pold) + 1; mbar <= ENDM(pold); mbar++){
-      update_pressure_routine(psimdata, mbar, nbar, STARTP(pold));
+  for (n = startn + 1; n <= endn; n++){
+    for (m = startm + 1; m <= endm; m++){
+      update_pressure_routine(psimdata, m, n, startp, DOWN);
     }
   }
 
   MPI_Waitall(3, request_send, MPI_STATUSES_IGNORE);
 }
 
-void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p) {
+void update_pressure_routine_inside(process_simulation_data_t *psimdata, int m, int n, int p) {
 
   const double dtdx = psimdata->params.dt / psimdata->params.dx;
+  const register int mbar = m - STARTM(psimdata->pold), nbar = n - STARTN(psimdata->pold), pbar = p - STARTP(psimdata->pold);
 
-  double c = process_getvalue(psimdata->c, m, n, p);
-  double rho = process_getvalue(psimdata->rho, m, n, p);
+  double c   = PROCESS_GETVALUE_INSIDE(psimdata->c    , mbar, nbar, pbar);
+  double rho = PROCESS_GETVALUE_INSIDE(psimdata->rho  , mbar, nbar, pbar);
 
-  double dvx = process_getvalue(psimdata->vxold, m, n, p);
-  double dvy = process_getvalue(psimdata->vyold, m, n, p);
-  double dvz = process_getvalue(psimdata->vzold, m, n, p);
+  double dvx = PROCESS_GETVALUE_INSIDE(psimdata->vxold, mbar, nbar, pbar) - PROCESS_GETVALUE_INSIDE(psimdata->vxold, mbar - 1, nbar, pbar);
+  double dvy = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, nbar, pbar) - PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, nbar - 1, pbar);
+  double dvz = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pbar) - PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pbar - 1);
+
+  double prev_p = PROCESS_GETVALUE_INSIDE(psimdata->pold, mbar, nbar, pbar);
+
+  PROCESS_SETVALUE_INSIDE(psimdata->pnew, mbar, nbar, pbar, prev_p - rho * c * c * dtdx * (dvx + dvy + dvz));
+}
+
+void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p, neighbor_t neighbor) {
+
+  const double dtdx = psimdata->params.dt / psimdata->params.dx;
+  const register int mbar = m - STARTM(psimdata->pold), nbar = n - STARTN(psimdata->pold), pbar = p - STARTP(psimdata->pold);
+
+  double c   = PROCESS_GETVALUE_INSIDE(psimdata->c    , mbar, nbar, pbar);
+  double rho = PROCESS_GETVALUE_INSIDE(psimdata->rho  , mbar, nbar, pbar);
+
+  double dvx = PROCESS_GETVALUE_INSIDE(psimdata->vxold, mbar, nbar, pbar);
+  double dvy = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, nbar, pbar);
+  double dvz = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pbar);
 
   dvx -= m > 0 ? process_getvalue(psimdata->vxold, m - 1, n, p) : 0.0;
   dvy -= n > 0 ? process_getvalue(psimdata->vyold, m, n - 1, p) : 0.0;
   dvz -= p > 0 ? process_getvalue(psimdata->vzold, m, n, p - 1) : 0.0;
 
-  double prev_p = process_getvalue(psimdata->pold, m, n, p);
+  double prev_p = PROCESS_GETVALUE_INSIDE(psimdata->pold, mbar, nbar, pbar);
 
-  process_setvalue(psimdata->pnew, m, n, p, prev_p - rho * c * c * dtdx * (dvx + dvy + dvz));
+  PROCESS_SETVALUE_INSIDE(psimdata->pnew, mbar, nbar, pbar, prev_p - rho * c * c * dtdx * (dvx + dvy + dvz));
 }
 
 void update_velocities(process_simulation_data_t *psimdata) {
@@ -1181,6 +1145,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
   MPI_Request request_recv[3], request_send[3];
   register process_data_t *vxold = psimdata->vxold;
 
+  int m, n, p;
   int mbar, nbar, pbar;
   register const int pnumnodesx = PNUMNODESX(vxold), startm = STARTM(vxold), endm = ENDM(vxold),
                      pnumnodesy = PNUMNODESY(vxold), startn = STARTN(vxold), endn = ENDN(vxold),
@@ -1192,17 +1157,17 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (nbar = 0; nbar < pnumnodesy; nbar++){
-      psimdata->buffer_px[pbar * pnumnodesy + nbar] = process_getvalue(psimdata->pnew, startm, nbar + startn, pbar + startp);
+      psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
     }
   }
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_py[pbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + startm, startn, pbar + startp);
+      psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
     }
   }
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     for (mbar = 0; mbar < pnumnodesx; mbar++){
-      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = process_getvalue(psimdata->pnew, mbar + startm, nbar + startn, startp);
+      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, 0);
     }
   }
 
@@ -1210,59 +1175,83 @@ void update_velocities(process_simulation_data_t *psimdata) {
   MPI_Isend(psimdata->buffer_py, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
   MPI_Isend(psimdata->buffer_pz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_send[2]);
 
-  for (pbar = startp; pbar <= endp - 1; pbar++) {
-    for (nbar = startn; nbar <= endn - 1; nbar++) {
-      for (mbar = startm; mbar <= endm - 1; mbar++) {
-        update_velocity_routine(psimdata, mbar, nbar, pbar);
+  for (p = startp; p <= endp - 1; p++) {
+    for (n = startn; n <= endn - 1; n++) {
+      for (m = startm; m <= endm - 1; m++) {
+        update_velocity_routine_inside(psimdata, m, n, p);
       }
     }
   }
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  for (pbar = startp; pbar <= endp; pbar++) {
-    for (nbar = startn; nbar <= endn; nbar++) {
-      update_velocity_routine(psimdata, endm, nbar, pbar);
+  for (p = startp; p <= endp; p++) {
+    for (n = startn; n <= endn; n++) {
+      update_velocity_routine(psimdata, endm, n, p);
     }
   }
 
-  for (pbar = startp; pbar <= endp; pbar++) {
-    for (mbar = startm; mbar < endm; mbar++) {
-      update_velocity_routine(psimdata, mbar, endn, pbar);
+  for (p = startp; p <= endp; p++) {
+    for (m = startm; m < endm; m++) {
+      update_velocity_routine(psimdata, m, endn, p);
     }
   }
 
-  for (nbar = startn; nbar < endn; nbar++){
-    for (mbar = startm; mbar < endm; mbar++){
-      update_velocity_routine(psimdata, mbar, nbar, endp);
+  for (n = startn; n < endn; n++){
+    for (m = startm; m < endm; m++){
+      update_velocity_routine(psimdata, m, n, endp);
     }
   }
 
   MPI_Waitall(3, request_send, MPI_STATUS_IGNORE);
 }
 
-void update_velocity_routine(process_simulation_data_t *psimdata, int m, int n, int p) {
-  const double dtdxrho = psimdata->params.dt / psimdata->params.dx / process_getvalue(psimdata->rhohalf, m, n, p);
+void update_velocity_routine_inside(process_simulation_data_t *psimdata, int m, int n, int p) {
 
   process_data_t *pnew = psimdata->pnew;
+  const register int mbar = m - STARTM(pnew), nbar = n - STARTN(pnew), pbar = p - STARTP(pnew);
+
+  const double dtdxrho = psimdata->params.dt / psimdata->params.dx / PROCESS_GETVALUE_INSIDE(psimdata->rhohalf, mbar, nbar, pbar);
+
+  double p_mnp = PROCESS_GETVALUE_INSIDE(pnew, mbar, nbar, pbar);
+
+  double dpx = PROCESS_GETVALUE_INSIDE(pnew, mbar+1, nbar, pbar) - p_mnp;
+  double dpy = PROCESS_GETVALUE_INSIDE(pnew, mbar, nbar+1, pbar) - p_mnp;
+  double dpz = PROCESS_GETVALUE_INSIDE(pnew, mbar, nbar, pbar+1) - p_mnp;
+
+  double prev_vx = PROCESS_GETVALUE_INSIDE(psimdata->vxold, mbar, nbar, pbar);
+  double prev_vy = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, nbar, pbar);
+  double prev_vz = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pbar);
+
+  PROCESS_SETVALUE_INSIDE(psimdata->vxnew, mbar, nbar, pbar, prev_vx - dtdxrho * dpx);
+  PROCESS_SETVALUE_INSIDE(psimdata->vynew, mbar, nbar, pbar, prev_vy - dtdxrho * dpy);
+  PROCESS_SETVALUE_INSIDE(psimdata->vznew, mbar, nbar, pbar, prev_vz - dtdxrho * dpz);
+}
+
+void update_velocity_routine(process_simulation_data_t *psimdata, int m, int n, int p) {
+  
+  process_data_t *pnew = psimdata->pnew;
+  const register int mbar = m - STARTM(pnew), nbar = n - STARTN(pnew), pbar = p - STARTP(pnew);
+
+  const double dtdxrho = psimdata->params.dt / psimdata->params.dx / PROCESS_GETVALUE_INSIDE(psimdata->rhohalf, mbar, nbar, pbar);
 
   int mp1 = MIN(psimdata->global_grid.numnodesx - 1, m + 1);
   int np1 = MIN(psimdata->global_grid.numnodesy - 1, n + 1);
   int pp1 = MIN(psimdata->global_grid.numnodesz - 1, p + 1);
 
-  double p_mnp = process_getvalue(pnew, m, n, p);
+  double p_mnp = PROCESS_GETVALUE_INSIDE(pnew, mbar, nbar, pbar);
 
   double dpx = process_getvalue(pnew, mp1, n, p) - p_mnp;
   double dpy = process_getvalue(pnew, m, np1, p) - p_mnp;
   double dpz = process_getvalue(pnew, m, n, pp1) - p_mnp;
 
-  double prev_vx = process_getvalue(psimdata->vxold, m, n, p);
-  double prev_vy = process_getvalue(psimdata->vyold, m, n, p);
-  double prev_vz = process_getvalue(psimdata->vzold, m, n, p);
+  double prev_vx = PROCESS_GETVALUE_INSIDE(psimdata->vxold, mbar, nbar, pbar);
+  double prev_vy = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, nbar, pbar);
+  double prev_vz = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pbar);
 
-  process_setvalue(psimdata->vxnew, m, n, p, prev_vx - dtdxrho * dpx);
-  process_setvalue(psimdata->vynew, m, n, p, prev_vy - dtdxrho * dpy);
-  process_setvalue(psimdata->vznew, m, n, p, prev_vz - dtdxrho * dpz);
+  PROCESS_SETVALUE_INSIDE(psimdata->vxnew, mbar, nbar, pbar, prev_vx - dtdxrho * dpx);
+  PROCESS_SETVALUE_INSIDE(psimdata->vynew, mbar, nbar, pbar, prev_vy - dtdxrho * dpy);
+  PROCESS_SETVALUE_INSIDE(psimdata->vznew, mbar, nbar, pbar, prev_vz - dtdxrho * dpz);
 }
 
 void init_simulation(process_simulation_data_t *psimdata, const char *params_filename) {

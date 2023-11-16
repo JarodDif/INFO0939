@@ -50,11 +50,17 @@
   ((size_t)(grid).numnodesx * (grid).numnodesy * (grid).numnodesz)
 
 #define INDEX3D(grid, m, n, p)                                                 \
-  ((size_t)grid.numnodesy * grid.numnodesx * (p) + grid.numnodesx * (n) + (m))
+  ((size_t)(grid).numnodesy * (grid).numnodesx * (p) + (grid).numnodesx * (n) + (m))
 
-#define GETVALUE(dat, m, n, p) ((dat)->vals[INDEX3D((dat)->grid, m, n, p)])
+#define GETVALUE(dat, m, n, p) ((dat)->vals[INDEX3D((dat)->grid, (m), (n), (p))])
 #define SETVALUE(dat, m, n, p, val)                                            \
-  ((dat)->vals[INDEX3D((dat)->grid, m, n, p)] = (val))
+  ((dat)->vals[INDEX3D((dat)->grid, (m), (n), (p))] = (val))
+
+#define PROCESS_GETVALUE_INSIDE(pdat, mbar, nbar, pbar)                        \
+  ((pdat)->vals[PNUMNODESX((pdat)) * PNUMNODESY((pdat)) * (pbar) + PNUMNODESX((pdat)) * (nbar) + (mbar)])
+
+#define PROCESS_SETVALUE_INSIDE(pdat, mbar, nbar, pbar, val)                   \
+  ((pdat)->vals[PNUMNODESX((pdat)) * PNUMNODESY((pdat)) * (pbar) + PNUMNODESX((pdat)) * (nbar) + (mbar)] = (val))
 
 // custom process_data_t MACROS 
 #define PNUMNODESX(pdat) ((pdat)->grid.lm.n)
@@ -550,6 +556,17 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
 void update_pressure(process_simulation_data_t *psimdata);
 
 /**
+ * @brief Application of the numerical scheme for pressure update inside a subdomain
+ *
+ * @param psimdata [INOUT] a simulation data object used to get the input and
+ * store result of the update step
+ * @param m [IN] first index
+ * @param n [IN] second index
+ * @param p [IN] third index
+ */
+void update_pressure_routine_inside(process_simulation_data_t *psimdata, int m, int n, int p);
+
+/**
  * @brief Application of the numerical scheme for pressure update
  *
  * @param psimdata [INOUT] a simulation data object used to get the input and
@@ -558,7 +575,7 @@ void update_pressure(process_simulation_data_t *psimdata);
  * @param n [IN] second index
  * @param p [IN] third index
  */
-void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p);
+void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, int p, neighbor_t neighbor);
 
 /**
  * @brief Perform the velocities update step
@@ -567,6 +584,17 @@ void update_pressure_routine(process_simulation_data_t *psimdata, int m, int n, 
  * store result of the update step
  */
 void update_velocities(process_simulation_data_t *psimdata);
+
+/**
+ * @brief Application of the numerical scheme for velocity update inside the subdomain
+ *
+ * @param psimdata [INOUT] a simulation data object used to get the input and
+ * store result of the update step
+ * @param m [IN] first index
+ * @param n [IN] second index
+ * @param p [IN] third index
+ */
+void update_velocity_routine_inside(process_simulation_data_t *psimdata, int m, int n, int p);
 
 /**
  * @brief Application of the numerical scheme for velocity update
