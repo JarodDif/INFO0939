@@ -6,4 +6,4 @@
 #SBATCH --output=run_mpi.out
 
 module load OpenMPI
-srun ../../fdtd param_3d.txt
+srun ../../mpi/fdtd param_3d.txt

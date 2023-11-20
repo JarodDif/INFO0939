@@ -6,4 +6,4 @@
 #SBATCH --output=run_custom.out
 
 module load OpenMPI
-srun ../../fdtd param_custom.txt
+srun ../../mpi/fdtd param_custom.txt
