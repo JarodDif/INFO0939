@@ -5,6 +5,9 @@
 
 #include "fdtd.h"
 
+//was empirically determined to be the best choice
+#define NCOLLAPSE 2
+
 int main(int argc, const char *argv[]) {
   if (argc < 2) {
     printf("\nUsage: ./fdtd <param_file>\n\n");
