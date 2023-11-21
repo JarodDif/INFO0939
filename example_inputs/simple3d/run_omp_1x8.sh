@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name="mpi_1x8"
+#SBATCH --job-name="omp_1x8"
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:04:00 # hh:mm:ss
-#SBATCH --output=run_mpi_1x8.out
+#SBATCH --output=run_omp_1x8.out
 #SBATCH --mem-per-cpu=1024 # 1GB
 #SBATCH --partition=batch
 
