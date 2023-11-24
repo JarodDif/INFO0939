@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4096
 #SBATCH --time=01:00:00
-#SBATCH --output=run_mpi_custom.out
+#SBATCH --output=run_mpi_big_r7.out
 
 module load OpenMPI
 srun ../../mpi/fdtd param_custom.txt

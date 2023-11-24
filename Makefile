@@ -2,9 +2,11 @@
 
 CC = gcc
 MPICC = mpicc
+CCLANG = clang
 CFLAGS = -O3
 LDFLAGS = -lm
 LDFLAGS_OMP = -lm -fopenmp
+LDFLAGS_GPU = -lm -fopenmp --offload-arch=sm_80
 SRC_DEFAULT = default/fdtd.c
 HDR_DEFAULT = default/fdtd.h
 OUT_DEFAULT = default/fdtd
@@ -17,6 +19,9 @@ OUT_OMP = omp/fdtd
 SRC_HYBRID = mpi_omp/fdtd.c
 HDR_HYBRID = mpi_omp/fdtd.h
 OUT_HYBRID = mpi_omp/fdtd
+SRC_GPU = gpu/fdtd.c
+HDR_GPU = gpu/fdtd.h
+OUT_GPU = gpu/fdtd
 EXAMPLE_FOLDER = example_inputs/simple3d/
 PARAM_FILE = param_3d.txt
 
@@ -28,6 +33,7 @@ default: $(OUT_DEFAULT)
 mpi: $(OUT_MPI)
 omp: $(OUT_OMP)
 hybrid: $(OUT_HYBRID) 
+gpu: $(OUT_GPU)
 
 $(OUT_DEFAULT): $(SRC_DEFAULT) $(HDR_DEFAULT)
 	$(CC) $(CFLAGS) -o $(OUT_DEFAULT) $(SRC_DEFAULT) $(LDFLAGS)
@@ -39,7 +45,10 @@ $(OUT_OMP) : $(SRC_OMP) $(HDR_OMP)
 	$(CC) $(CFLAGS) -o $(OUT_DEFAULT) $(SRC_DEFAULT) $(LDFLAGS_OMP)
 
 $(OUT_HYBRID): $(SRC_HYBRID) $(HDR_HYBRID)
-	$(MPICC) $(CFLAGS) -o $(OUT_MPI) $(SRC_MPI) $(LDFLAGS_OMP)
+	$(MPICC) $(CFLAGS) -o $(OUT_HYBRID) $(SRC_HYBRID) $(LDFLAGS_OMP)
+
+$(OUT_GPU) : $(SRC_GPU) $(HDR_GPU)
+	$(CCLANG) $(CFLAGS) -o $(OUT_GPU) $(SRC_GPU) $(LDFLAGS_GPU)
 
 #runs the default version
 run_default: $(OUT_DEFAULT)
@@ -72,7 +81,7 @@ endif
 
 # removes the build programs
 clean:
-	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_OMP) $(OUT_HYBRID)
+	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_OMP) $(OUT_HYBRID) $(OUT_GPU)
 
 # removes any output file
 clean_out:
