@@ -1005,8 +1005,6 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
     return 1;
   }
 
-  DEBUG_PRINT("I_I objects OK");
-
   if ((psimdata->c = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rho = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rhohalf = allocate_pdata(psimgrid, 0)) == NULL) {
@@ -1260,8 +1258,6 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     exit(1);
   }
 
-  DEBUG_PRINT("Read Paramfile OK");
-
   grid_t rhoin_grid;
   grid_t cin_grid;
   process_grid_t psim_grid;
@@ -1300,8 +1296,6 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   fclose(rhofp);
   fclose(cfp);
 
-  DEBUG_PRINT("Reading Input Files ok");
-
   double xmin = rhoin_grid.xmin, xmax = rhoin_grid.xmax, 
     ymin = rhoin_grid.ymin, ymax = rhoin_grid.ymax, 
     zmin = rhoin_grid.zmin, zmax = rhoin_grid.zmax;
@@ -1334,11 +1328,11 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     MPI_Abort(cart_comm, MPI_ERR_NO_MEM);
   }
 
-  DEBUG_PRINT("Interpolate Inputmaps OK");
-
+  /*
   DEBUG_PRINTF("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n\tcvalue %10.5lf at (%3d, %3d, %3d)\n",
     cart_rank, psim_grid.lm.start, psim_grid.lm.end, psim_grid.ln.start, psim_grid.ln.end, psim_grid.lp.start, psim_grid.lp.end,
     psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.lm.start, psim_grid.ln.start, psim_grid.lp.start);
+  */
 
   if (cart_rank == 0){
     if (psimdata->params.outrate > 0 && psimdata->params.outputs != NULL) {
