@@ -24,23 +24,23 @@ int neighbors[6];
               map(   simdata.pold->ghostvals[RIGHT][0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.pold->ghostvals[BACK ][0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.pold->ghostvals[UP   ][0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
-              map(to:simdata.pnew[0:1]) map(simdata->pnew.ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(to:simdata.pnew[0:1]) map(simdata.pnew->ghostvals[0:NEIGHBOR_TYPE_END]) \
               map(to:simdata.pnew->ghostvals[RIGHT][0:PNUMNODESY(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
               map(to:simdata.pnew->ghostvals[BACK ][0:PNUMNODESX(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
               map(to:simdata.pnew->ghostvals[UP   ][0:PNUMNODESX(simdata.pnew) * PNUMNODESY(simdata.pnew)]) \
-              map(   simdata.vxold[0:1]) map(simdata->vxold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vxold[0:1]) map(simdata.vxold->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(   simdata.vxold->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxold) * PNUMNODESZ(simdata.vxold)]) \
-              map(to:simdata.vxnew[0:1]) map(simdata->vxnew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vxnew[0:1]) map(simdata.vxnew->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(to:simdata.vxnew->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxnew) * PNUMNODESZ(simdata.vxnew)]) \
-              map(   simdata.vyold[0:1]) map(simdata->vyold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vyold[0:1]) map(simdata.vyold->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(   simdata.vyold->ghostvals[FRONT][0:PNUMNODESX(simdata.vyold) * PNUMNODESZ(simdata.vyold)]) \
-              map(to:simdata.vynew[0:1]) map(simdata->vynew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vynew[0:1]) map(simdata.vynew->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(to:simdata.vynew->ghostvals[FRONT][0:PNUMNODESX(simdata.vynew) * PNUMNODESZ(simdata.vynew)]) \
-              map(   simdata.vzold[0:1]) map(simdata->vzold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vzold[0:1]) map(simdata.vzold->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(   simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
-              map(to:simdata.vznew[0:1]) map(simdata->vznew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vznew[0:1]) map(simdata.vznew->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(to:simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
-              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNO.SZ(si->data.pold)]) \
               map(   simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
@@ -558,7 +558,7 @@ int write_data(FILE *fp, data_t *data, int step, double time) {
     return 1;
   }
 
-  size_t numnodes = NUMNODESTOT(data);
+  size_t numnodes = NUMNODESTOT(data->grid);
   if (numnodes <= 0) {
     DEBUG_PRINTF("Invalid number of nodes (%lu)", numnodes);
     return 1;

@@ -469,7 +469,7 @@ int write_data(FILE *fp, data_t *data, int step, double time);
  * @param time [IN] the time in the simulation of the step
  * @return int 0 if read was a success, returns 1 otherwise
  */
-int write_output(output_t *output, process_data_t *data, grid_t global_grid, int step, double time);
+int write_output(output_t *output, process_data_t *data, grid_t* global_grid, int step, double time);
 
 /**
  * @brief Open an output file for writing output data
