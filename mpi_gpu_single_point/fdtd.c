@@ -13,50 +13,39 @@ int neighbors[6];
               map(to:source) \
               map(to:source.data[0:source.numsamples])
 
-#pragma omp declare mapper(inputs : process_data_t data) \
+#pragma omp declare mapper(process_data_t data) \
               map(to:data) \
               map(   data.vals[0:PNUMNODESTOT(&data)])
 
-#pragma omp declare mapper(pressure : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[RIGHT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)]) \
-              map(   data.ghostvals[BACK ][0:PNUMNODESX(&data) * PNUMNODESZ(&data)]) \
-              map(   data.ghostvals[UP   ][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
-
-#pragma omp declare mapper(velocity_x : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[LEFT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)])
-
-#pragma omp declare mapper(velocity_y : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[FRONT][0:PNUMNODESX(&data) * PNUMNODESZ(&data)])
-
-#pragma omp declare mapper(velocity_z : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[DOWN][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
-
 #pragma omp declare mapper(process_simulation_data_t simdata) \
               map(to:simdata) \
-              map(mapper(inputs), to:simdata.c[0:1]) \
-              map(mapper(inputs), to:simdata.rho[0:1]) map(mapper(inputs), simdata.rhohalf[0:1]) \
-              map(mapper(pressure),   simdata.pold[0:1])  map(mapper(pressure),   to:simdata.pnew[0:1])  \
-              map(mapper(velocity_x), simdata.vxold[0:1]) map(mapper(velocity_x), to:simdata.vxnew[0:1]) \
-              map(mapper(velocity_y), simdata.vyold[0:1]) map(mapper(velocity_y), to:simdata.vynew[0:1]) \
-              map(mapper(velocity_z), simdata.vzold[0:1]) map(mapper(velocity_u), to:simdata.vznew[0:1]) \
-              map(   simdata.buffervx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.bufferpx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffervy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.bufferpy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffervz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
-              map(   simdata.bufferpz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
+              map(to:simdata.c[0:1]) map( to:simdata.rho[0:1]) map(simdata.rhohalf[0:1]) \
+              map(   simdata.pold[0:1]) map(simdata.pold->ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(   simdata.pold->ghostvals[RIGHT][0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.pold->ghostvals[BACK ][0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.pold->ghostvals[UP   ][0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(to:simdata.pnew[0:1]) map(simdata->pnew.ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(to:simdata.pnew->ghostvals[RIGHT][0:PNUMNODESY(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(to:simdata.pnew->ghostvals[BACK ][0:PNUMNODESX(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(to:simdata.pnew->ghostvals[UP   ][0:PNUMNODESX(simdata.pnew) * PNUMNODESY(simdata.pnew)]) \
+              map(   simdata.vxold[0:1]) map(simdata->vxold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vxold->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxold) * PNUMNODESZ(simdata.vxold)]) \
+              map(to:simdata.vxnew[0:1]) map(simdata->vxnew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vxnew->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxnew) * PNUMNODESZ(simdata.vxnew)]) \
+              map(   simdata.vyold[0:1]) map(simdata->vyold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vyold->ghostvals[FRONT][0:PNUMNODESX(simdata.vyold) * PNUMNODESZ(simdata.vyold)]) \
+              map(to:simdata.vynew[0:1]) map(simdata->vynew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vynew->ghostvals[FRONT][0:PNUMNODESX(simdata.vynew) * PNUMNODESZ(simdata.vynew)]) \
+              map(   simdata.vzold[0:1]) map(simdata->vzold.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
+              map(to:simdata.vznew[0:1]) map(simdata->vznew.ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
+              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_vz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(   simdata.buffer_pz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -122,7 +111,7 @@ int main(int argc, char *argv[]) {
         }
 
           double time = tstep * psimdata.params.dt;
-          write_output(&psimdata.params.outputs[i], output_data, tstep, time);
+          write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
       }
     }
 
