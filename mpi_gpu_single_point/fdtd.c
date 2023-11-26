@@ -15,33 +15,33 @@ int neighbors[6];
 
 #pragma omp declare mapper(inputs : process_data_t data) \
               map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(data)])
+              map(   data.vals[0:PNUMNODESTOT(&data)])
 
 #pragma omp declare mapper(pressure : process_data_t data) \
               map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(data)]) \
+              map(   data.vals[0:PNUMNODESTOT(&data)]) \
               map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[RIGHT][0:PNUMNODESY(data) * PNUMNODESZ(data)]) \
-              map(   data.ghostvals[BACK ][0:PNUMNODESX(data) * PNUMNODESZ(data)]) \
-              map(   data.ghostvals[UP   ][0:PNUMNODESX(data) * PNUMNODESY(data)])
+              map(   data.ghostvals[RIGHT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)]) \
+              map(   data.ghostvals[BACK ][0:PNUMNODESX(&data) * PNUMNODESZ(&data)]) \
+              map(   data.ghostvals[UP   ][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
 
 #pragma omp declare mapper(velocity_x : process_data_t data) \
               map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(data)]) \
+              map(   data.vals[0:PNUMNODESTOT(&data)]) \
               map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[LEFT][0:PNUMNODESY(data) * PNUMNODESZ(data)])
+              map(   data.ghostvals[LEFT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)])
 
 #pragma omp declare mapper(velocity_y : process_data_t data) \
               map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(data)]) \
+              map(   data.vals[0:PNUMNODESTOT(&data)]) \
               map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[FRONT][0:PNUMNODESX(data) * PNUMNODESZ(data)])
+              map(   data.ghostvals[FRONT][0:PNUMNODESX(&data) * PNUMNODESZ(&data)])
 
 #pragma omp declare mapper(velocity_z : process_data_t data) \
               map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(data)]) \
+              map(   data.vals[0:PNUMNODESTOT(&data)]) \
               map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[DOWN][0:PNUMNODESX(data) * PNUMNODESY(data)])
+              map(   data.ghostvals[DOWN][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
 
 #pragma omp declare mapper(process_simulation_data_t simdata) \
               map(to:simdata) \
