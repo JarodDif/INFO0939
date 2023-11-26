@@ -1406,12 +1406,14 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     }
 
     int m, n, p;
-    closest_index(&psimdata->global_grid, posx, posy, posz, &m, &n, &p);
+    closest_index(&psimdata->global_grid, 
+      psimdata->params.outputs[i].posx, psimdata->params.outputs[i].posy, psimdata->params.outputs[i].posz, 
+      &m, &n, &p);
 
     for (int i = 0; i < psimdata->params.numoutputs; i++) {
       output_t *output = &psimdata->params.outputs[i];
 
-      if (open_outputfile(output, &psim_grid) != 0) {
+      if (open_outputfile(output, &psim_grid, &psimdata->global_grid) != 0) {
         printf("Failed to open output file: '%s'. Aborting...\n\n",
               output->filename);
         MPI_Abort(cart_comm, MPI_ERR_IO);
