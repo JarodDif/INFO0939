@@ -1405,13 +1405,10 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
       }
     }
 
-    int m, n, p;
-    closest_index(&psimdata->global_grid, 
-      psimdata->params.outputs[i].posx, psimdata->params.outputs[i].posy, psimdata->params.outputs[i].posz, 
-      &m, &n, &p);
-
     for (int i = 0; i < psimdata->params.numoutputs; i++) {
       output_t *output = &psimdata->params.outputs[i];
+      int m, n, p;
+      closest_index(&psimdata->global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
       if (open_outputfile(output, &psim_grid, &psimdata->global_grid) != 0) {
         printf("Failed to open output file: '%s'. Aborting...\n\n",
