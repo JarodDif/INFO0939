@@ -86,7 +86,6 @@ int main(int argc, char *argv[]) {
   #pragma omp target data map(to:psimdata)
   for (int tstep = 0; tstep <= numtimesteps; tstep++) {
     apply_source(&psimdata, tstep);
-    if (cart_rank==0) printf("Applied Source ");
 
     // Need to collect data from all the different processes
     if (psimdata.params.outrate > 0 && (tstep % psimdata.params.outrate) == 0) {
@@ -136,11 +135,8 @@ int main(int argc, char *argv[]) {
     }
 
     update_pressure(&psimdata);
-    if (cart_rank==0) printf("Update pressure ");
     update_velocities(&psimdata);
-    if (cart_rank==0) printf("Update velocity");
     swap_timesteps(&psimdata);
-    if (cart_rank==0) printf("\n");
   }
 
   if(cart_rank == 0){
