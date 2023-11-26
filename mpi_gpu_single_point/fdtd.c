@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <stdio.h>
 
 #include "fdtd.h"
 
@@ -136,6 +137,7 @@ int main(int argc, char *argv[]) {
     update_pressure(&psimdata);
     update_velocities(&psimdata);
     swap_timesteps(&psimdata);
+    if (rank==0) printf(".");
   }
 
   if(cart_rank == 0){
