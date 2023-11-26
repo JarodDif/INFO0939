@@ -997,12 +997,16 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
     return 1;
   }
 
+  DEBUG_PRINT("Entered interpolate_inputmaps");
+
   if ((psimdata->c = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rho = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rhohalf = allocate_pdata(psimgrid, 0)) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
     return 1;
   }
+
+  DEBUG_PRINT("Created inputs");
 
   double dx = psimdata->params.dx;
   double dxd2 = psimdata->params.dx / 2;
