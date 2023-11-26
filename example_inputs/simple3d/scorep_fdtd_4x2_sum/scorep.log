@@ -1,0 +1,42 @@
+S=C=A=N: Sun Nov 26 22:51:35 2023: Collect start
+/usr/bin/srun ../../mpi_omp/fdtd param_3d.txt
+
+ Grid spacing: 0.01
+  Grid size X: 100
+  Grid size Y: 100
+  Grid size Z: 100
+    Time step: 5e-07
+ Maximum time: 0.001
+
+     Output rate: every 200 step(s)
+ Output sampling: 10000 Hz
+
+ Output files:
+
+      pressure: complete dump to file out_p.dat
+    velocity X: complete dump to file out_vx.dat
+    velocity Y: complete dump to file out_vy.dat
+    velocity Z: complete dump to file out_vz.dat
+
+ Source infos:
+
+          type: sine wave
+     frequency: 3400 Hz
+    position x: 0.5
+    position y: 0.5
+    position z: 0.5
+
+step      200/2000 (ETA:  156.850 seconds)
+step      400/2000 (ETA:  139.570 seconds)
+step      600/2000 (ETA:  122.562 seconds)
+step      800/2000 (ETA:  104.757 seconds)
+step     1000/2000 (ETA:   87.052 seconds)
+step     1200/2000 (ETA:   69.582 seconds)
+step     1400/2000 (ETA:   52.045 seconds)
+step     1600/2000 (ETA:   34.808 seconds)
+step     1800/2000 (ETA:   17.474 seconds)
+step     2000/2000
+
+Elapsed 174.612558 seconds (11.460 Mupdates/s)
+
+S=C=A=N: Sun Nov 26 22:54:32 2023: Collect done (status=0) 177s

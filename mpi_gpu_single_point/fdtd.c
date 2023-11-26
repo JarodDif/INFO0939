@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <stdio.h>
 
 #include "fdtd.h"
 
@@ -13,50 +14,39 @@ int neighbors[6];
               map(to:source) \
               map(to:source.data[0:source.numsamples])
 
-#pragma omp declare mapper(inputs : process_data_t data) \
+#pragma omp declare mapper(process_data_t data) \
               map(to:data) \
               map(   data.vals[0:PNUMNODESTOT(&data)])
 
-#pragma omp declare mapper(pressure : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[RIGHT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)]) \
-              map(   data.ghostvals[BACK ][0:PNUMNODESX(&data) * PNUMNODESZ(&data)]) \
-              map(   data.ghostvals[UP   ][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
-
-#pragma omp declare mapper(velocity_x : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[LEFT][0:PNUMNODESY(&data) * PNUMNODESZ(&data)])
-
-#pragma omp declare mapper(velocity_y : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[FRONT][0:PNUMNODESX(&data) * PNUMNODESZ(&data)])
-
-#pragma omp declare mapper(velocity_z : process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)]) \
-              map(to:data.ghostvals[0:6]) \
-              map(   data.ghostvals[DOWN][0:PNUMNODESX(&data) * PNUMNODESY(&data)])
-
 #pragma omp declare mapper(process_simulation_data_t simdata) \
               map(to:simdata) \
-              map(mapper(inputs), to:simdata.c[0:1]) \
-              map(mapper(inputs), to:simdata.rho[0:1]) map(mapper(inputs), simdata.rhohalf[0:1]) \
-              map(mapper(pressure),   simdata.pold[0:1])  map(mapper(pressure),   to:simdata.pnew[0:1])  \
-              map(mapper(velocity_x), simdata.vxold[0:1]) map(mapper(velocity_x), to:simdata.vxnew[0:1]) \
-              map(mapper(velocity_y), simdata.vyold[0:1]) map(mapper(velocity_y), to:simdata.vynew[0:1]) \
-              map(mapper(velocity_z), simdata.vzold[0:1]) map(mapper(velocity_u), to:simdata.vznew[0:1]) \
-              map(   simdata.buffervx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.bufferpx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffervy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.bufferpy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffervz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
-              map(   simdata.bufferpz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
+              map(to:simdata.c[0:1]) map( to:simdata.rho[0:1]) map(simdata.rhohalf[0:1]) \
+              map(   simdata.pold[0:1]) map(simdata.pold->ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(   simdata.pold->ghostvals[RIGHT][0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.pold->ghostvals[BACK ][0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.pold->ghostvals[UP   ][0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(to:simdata.pnew[0:1]) map(simdata.pnew->ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(to:simdata.pnew->ghostvals[RIGHT][0:PNUMNODESY(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(to:simdata.pnew->ghostvals[BACK ][0:PNUMNODESX(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(to:simdata.pnew->ghostvals[UP   ][0:PNUMNODESX(simdata.pnew) * PNUMNODESY(simdata.pnew)]) \
+              map(   simdata.vxold[0:1]) map(simdata.vxold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vxold->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxold) * PNUMNODESZ(simdata.vxold)]) \
+              map(to:simdata.vxnew[0:1]) map(simdata.vxnew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vxnew->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxnew) * PNUMNODESZ(simdata.vxnew)]) \
+              map(   simdata.vyold[0:1]) map(simdata.vyold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vyold->ghostvals[FRONT][0:PNUMNODESX(simdata.vyold) * PNUMNODESZ(simdata.vyold)]) \
+              map(to:simdata.vynew[0:1]) map(simdata.vynew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vynew->ghostvals[FRONT][0:PNUMNODESX(simdata.vynew) * PNUMNODESZ(simdata.vynew)]) \
+              map(   simdata.vzold[0:1]) map(simdata.vzold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(   simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
+              map(to:simdata.vznew[0:1]) map(simdata.vznew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(to:simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
+              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(   simdata.buffer_vz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(   simdata.buffer_pz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -122,7 +112,7 @@ int main(int argc, char *argv[]) {
         }
 
           double time = tstep * psimdata.params.dt;
-          write_output(&psimdata.params.outputs[i], output_data, tstep, time);
+          write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
       }
     }
 
@@ -569,7 +559,7 @@ int write_data(FILE *fp, data_t *data, int step, double time) {
     return 1;
   }
 
-  size_t numnodes = NUMNODESTOT(data);
+  size_t numnodes = NUMNODESTOT(data->grid);
   if (numnodes <= 0) {
     DEBUG_PRINTF("Invalid number of nodes (%lu)", numnodes);
     return 1;
@@ -611,17 +601,17 @@ int write_output(output_t *output, process_data_t *data, grid_t* global_grid, in
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n,
                 &p);
 
-  int mbar = m - data->grid->lm->start,
-    nbar = n - data->grid->ln->start,
-    pbar = p - data->grid->lp->start;
+  int mbar = m - data->grid.lm.start,
+    nbar = n - data->grid.ln.start,
+    pbar = p - data->grid.lp.start;
 
   int startm = (type == CUTX || type == POINT) ? mbar : 0;
   int startn = (type == CUTY || type == POINT) ? nbar : 0;
   int startp = (type == CUTZ || type == POINT) ? pbar : 0;
 
-  int endm = (type == CUTX || type == POINT) ? mbar + 1 : NUMNODESX(data);
-  int endn = (type == CUTY || type == POINT) ? nbar + 1 : NUMNODESY(data);
-  int endp = (type == CUTZ || type == POINT) ? pbar + 1 : NUMNODESZ(data);
+  int endm = (type == CUTX || type == POINT) ? mbar + 1 : PNUMNODESX(data);
+  int endn = (type == CUTY || type == POINT) ? nbar + 1 : PNUMNODESY(data);
+  int endp = (type == CUTZ || type == POINT) ? pbar + 1 : PNUMNODESZ(data);
 
   data_t *tmpdata = allocate_data(&output->grid);
 
@@ -676,15 +666,15 @@ int open_outputfile(output_t *output, process_grid_t *simgrid, grid_t* global_gr
   int m, n, p;
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
-  int mbar = m - simgrid->lm->start,
-    nbar = n - simgrid->ln->start,
-    pbar = p - simgrid->lp->start;
+  int mbar = m - simgrid->lm.start,
+    nbar = n - simgrid->ln.start,
+    pbar = p - simgrid->lp.start;
 
   FILE *fp = NULL;
   
-  if(mbar >= 0 && mbar < simgrid->lm->n &&
-    nbar >= 0 && nbar < simgrid->ln->n &&
-    pbar >= 0 && pbar < simgrid->lp->n){
+  if(mbar >= 0 && mbar < simgrid->lm.n &&
+    nbar >= 0 && nbar < simgrid->ln.n &&
+    pbar >= 0 && pbar < simgrid->lp.n){
     if ((fp = create_datafile(grid, output->filename)) == NULL) {
       DEBUG_PRINTF("Failed to open output file: '%s'", output->filename);
       return 1;
@@ -998,7 +988,7 @@ void apply_source(process_simulation_data_t *psimdata, int step) {
     PROCESS_SETVALUE_INSIDE(pold, mbar, nbar, pbar, psimdata->params.source.data[sample]);
   }
 
-  #pragma omp target update to(simdata->pold->vals[ PINDEX3D(simdata->pold, mbar,nbar,pbar) :1])
+  #pragma omp target update to(psimdata->pold->vals[ PINDEX3D(psimdata->pold, mbar,nbar,pbar) :1])
 }
 
 int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *psimgrid,
@@ -1008,12 +998,16 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
     return 1;
   }
 
+  DEBUG_PRINT("Entered interpolate_inputmaps");
+
   if ((psimdata->c = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rho = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rhohalf = allocate_pdata(psimgrid, 0)) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
     return 1;
   }
+
+  DEBUG_PRINT("Created inputs");
 
   double dx = psimdata->params.dx;
   double dxd2 = psimdata->params.dx / 2;
@@ -1416,13 +1410,12 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
       }
     }
 
-    int m, n, p;
-    closest_index(&psimdata->global_grid, posx, posy, posz, &m, &n, &p);
-
     for (int i = 0; i < psimdata->params.numoutputs; i++) {
       output_t *output = &psimdata->params.outputs[i];
+      int m, n, p;
+      closest_index(&psimdata->global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
-      if (open_outputfile(output, &psim_grid) != 0) {
+      if (open_outputfile(output, &psim_grid, &psimdata->global_grid) != 0) {
         printf("Failed to open output file: '%s'. Aborting...\n\n",
               output->filename);
         MPI_Abort(cart_comm, MPI_ERR_IO);
@@ -1505,7 +1498,7 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
     for (int i = 0; i < psimdata->params.numoutputs; i++) {
       free(psimdata->params.outputs[i].filename);
       
-      if (cart_rank == 0 && psimdata->params.outrate > 0) {
+      if (psimdata->params.outrate > 0 && psimdata->params.outputs[i].fp != NULL) {
         fclose(psimdata->params.outputs[i].fp);
       }
     }
