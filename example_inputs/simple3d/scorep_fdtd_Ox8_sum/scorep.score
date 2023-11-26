@@ -1,0 +1,48 @@
+
+Estimated aggregate size of event trace:                   73MB
+Estimated requirements for largest trace buffer (max_buf): 73MB
+Estimated memory requirements (SCOREP_TOTAL_MEMORY):       89MB
+(hint: When tracing set SCOREP_TOTAL_MEMORY=89MB to avoid intermediate flushes
+ or reduce requirements using USR regions filters.)
+
+flt     type max_buf[B]    visits time[s] time[%] time/visit[us]  region
+         ALL 76,510,209 3,106,388   37.85   100.0          12.18  ALL
+         USR 72,147,240 3,006,135    1.20     3.2           0.40  USR
+         OMP  4,266,640    96,240   36.60    96.7         380.30  OMP
+         COM     96,288     4,012    0.04     0.1          10.68  COM
+      SCOREP         41         1    0.00     0.0        2787.51  SCOREP
+
+         USR 72,000,000 3,000,000    0.35     0.9           0.12  trilinear_interpolation
+         OMP  1,360,680    16,008    0.01     0.0           0.48  ?$omp?parallel?@fdtd.c:841
+         OMP  1,360,680    16,008    0.01     0.0           0.49  ?$omp?parallel?@fdtd.c:874
+         OMP    384,192    16,008   11.58    30.6         723.35  ?$omp?for?@fdtd.c:841
+         OMP    384,192    16,008    5.71    15.1         356.84  ?$omp?implicit?barrier?@fdtd.c:864
+         OMP    384,192    16,008   12.99    34.3         811.30  ?$omp?for?@fdtd.c:874
+         OMP    384,192    16,008    6.28    16.6         392.13  ?$omp?implicit?barrier?@fdtd.c:899
+         USR     48,024     2,001    0.00     0.0           0.53  swap_timesteps
+         COM     48,024     2,001    0.02     0.0           9.30  update_velocities
+         COM     48,024     2,001    0.02     0.0           8.94  update_pressure
+         USR     48,024     2,001    0.00     0.0           1.06  apply_source
+         USR     48,024     2,001    0.00     0.0           0.14  closest_index
+         OMP      5,440        64    0.00     0.0           0.74  ?$omp?parallel?@fdtd.c:253
+         OMP      1,536        64    0.02     0.0         264.13  ?$omp?for?@fdtd.c:253
+         OMP      1,536        64    0.01     0.0         179.38  ?$omp?implicit?barrier?@fdtd.c:260
+         USR      1,056        44    0.00     0.0           2.31  write_output
+         USR      1,056        44    0.16     0.4        3691.62  write_data
+         USR        312        13    0.00     0.0           6.08  allocate_data
+         COM        192         8    0.00     0.0          80.54  fill_data
+         USR        144         6    0.00     0.0           0.40  copy_string
+         USR         96         4    0.00     0.0           1.14  read_outputparam
+         USR         96         4    0.00     0.0           1.69  open_outputfile
+         USR         96         4    0.03     0.1        6668.64  create_datafile
+         USR         96         4    0.00     0.0           0.53  print_output
+         USR         48         2    0.00     0.0           0.65  read_data
+         USR         48         2    0.00     0.0         266.43  open_datafile
+      SCOREP         41         1    0.00     0.0        2787.51  fdtd
+         COM         24         1    0.01     0.0        5477.82  main
+         USR         24         1    0.33     0.9      327054.26  finalize_simulation
+         COM         24         1    0.00     0.0         250.54  init_simulation
+         USR         24         1    0.33     0.9      330051.56  interpolate_inputmaps
+         USR         24         1    0.00     0.0         266.59  read_paramfile
+         USR         24         1    0.00     0.0           4.63  read_sourceparam
+         USR         24         1    0.00     0.0           4.99  print_source
