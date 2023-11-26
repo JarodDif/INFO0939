@@ -665,15 +665,15 @@ int open_outputfile(output_t *output, process_grid_t *simgrid, grid_t* global_gr
   int m, n, p;
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
-  int mbar = m - simgrid.lm.start,
-    nbar = n - simgrid.ln.start,
-    pbar = p - simgrid.lp.start;
+  int mbar = m - simgrid->lm.start,
+    nbar = n - simgrid->ln.start,
+    pbar = p - simgrid->lp.start;
 
   FILE *fp = NULL;
   
-  if(mbar >= 0 && mbar < simgrid->lm->n &&
-    nbar >= 0 && nbar < simgrid->ln->n &&
-    pbar >= 0 && pbar < simgrid->lp->n){
+  if(mbar >= 0 && mbar < simgrid->lm.n &&
+    nbar >= 0 && nbar < simgrid->ln.n &&
+    pbar >= 0 && pbar < simgrid->lp.n){
     if ((fp = create_datafile(grid, output->filename)) == NULL) {
       DEBUG_PRINTF("Failed to open output file: '%s'", output->filename);
       return 1;
@@ -987,7 +987,7 @@ void apply_source(process_simulation_data_t *psimdata, int step) {
     PROCESS_SETVALUE_INSIDE(pold, mbar, nbar, pbar, psimdata->params.source.data[sample]);
   }
 
-  #pragma omp target update to(simdata->pold->vals[ PINDEX3D(simdata->pold, mbar,nbar,pbar) :1])
+  #pragma omp target update to(psimdata->pold->vals[ PINDEX3D(psimdata->pold, mbar,nbar,pbar) :1])
 }
 
 int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *psimgrid,
