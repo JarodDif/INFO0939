@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     update_pressure(&psimdata);
     update_velocities(&psimdata);
     swap_timesteps(&psimdata);
-    if (rank==0) printf(".");
+    if (cart_rank==0) printf(".");
   }
 
   if(cart_rank == 0){
@@ -1499,7 +1499,7 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
     for (int i = 0; i < psimdata->params.numoutputs; i++) {
       free(psimdata->params.outputs[i].filename);
       
-      if (cart_rank == 0 && psimdata->params.outrate > 0) {
+      if (psimdata->params.outrate > 0 && psimdata->params.outputs[i].fp != NULL) {
         fclose(psimdata->params.outputs[i].fp);
       }
     }
