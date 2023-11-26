@@ -40,7 +40,7 @@ int neighbors[6];
               map(   simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
               map(to:simdata.vznew[0:1]) map(simdata.vznew->ghostvals[0:NEIGHBOR_TYPE_END])\
               map(to:simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
-              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNO.SZ(si->data.pold)]) \
+              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
               map(   simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
@@ -600,17 +600,17 @@ int write_output(output_t *output, process_data_t *data, grid_t* global_grid, in
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n,
                 &p);
 
-  int mbar = m - data->grid->lm->start,
-    nbar = n - data->grid->ln->start,
-    pbar = p - data->grid->lp->start;
+  int mbar = m - data->grid.lm.start,
+    nbar = n - data->grid.ln.start,
+    pbar = p - data->grid.lp.start;
 
   int startm = (type == CUTX || type == POINT) ? mbar : 0;
   int startn = (type == CUTY || type == POINT) ? nbar : 0;
   int startp = (type == CUTZ || type == POINT) ? pbar : 0;
 
-  int endm = (type == CUTX || type == POINT) ? mbar + 1 : NUMNODESX(data);
-  int endn = (type == CUTY || type == POINT) ? nbar + 1 : NUMNODESY(data);
-  int endp = (type == CUTZ || type == POINT) ? pbar + 1 : NUMNODESZ(data);
+  int endm = (type == CUTX || type == POINT) ? mbar + 1 : PNUMNODESX(data);
+  int endn = (type == CUTY || type == POINT) ? nbar + 1 : PNUMNODESY(data);
+  int endp = (type == CUTZ || type == POINT) ? pbar + 1 : PNUMNODESZ(data);
 
   data_t *tmpdata = allocate_data(&output->grid);
 
@@ -665,9 +665,9 @@ int open_outputfile(output_t *output, process_grid_t *simgrid, grid_t* global_gr
   int m, n, p;
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
-  int mbar = m - simgrid->lm->start,
-    nbar = n - simgrid->ln->start,
-    pbar = p - simgrid->lp->start;
+  int mbar = m - simgrid.lm.start,
+    nbar = n - simgrid.ln.start,
+    pbar = p - simgrid.lp.start;
 
   FILE *fp = NULL;
   
