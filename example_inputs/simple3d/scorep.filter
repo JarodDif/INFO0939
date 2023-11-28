@@ -1,0 +1,8 @@
+SCOREP_REGION_NAMES_BEGIN
+  EXCLUDE
+    update_pressure_routine_inside
+    update_pressure_routine
+    update_velocity_routine_inside
+    update_velocity_routine
+    trilinear_interpolation
+SCOREP_REGION_NAMES_END
