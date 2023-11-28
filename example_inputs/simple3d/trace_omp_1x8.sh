@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #
-#SBATCH --job-name="profile_omp_1x8"
+#SBATCH --job-name="trace_omp_1x8"
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:04:00 # hh:mm:ss
-#SBATCH --output=profile_omp_1x8.out
+#SBATCH --output=trace_omp_1x8.out
 #SBATCH --mem-per-cpu=1024 # 1GB
 #SBATCH --partition=batch
 
