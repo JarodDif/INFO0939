@@ -17,6 +17,9 @@ Each version of the program is in its own folder
 The given inputs are located in `example_inputs`. 
 We also added the SLURM scripts as well as some other examples created by ourselves.
 
+For standard compilation and running of the four first version of the code, a Makefile has been created.
+E.g. `make run_default` will run the sequential code on the given `param_3d.txt`
+
 You will find the source code of the different tools given for the project (`data2gmsh`)
 
 ### Different versions
@@ -41,7 +44,7 @@ The update of one pressure value takes around $10$ floating point operations and
 
 The update of the velocity values at one index takes around $10$ floating point operations $8$ memory accesses.
 
-Considering that floating point operations take $6$ CPU cycles and each memory access take $100-1000$ CPU cycles,  we clearly are memory bound.
+Considering that floating point operations take $6$ CPU cycles and each memory access take $100-1000$ CPU cycles, we clearly are memory bound.
 
 ## Q4 : CPU cache bottlenecks
 
@@ -67,7 +70,7 @@ The folder `mpi_omp` contains our hybrid implementation
 
 ## Q8 : Scalability analysis
 
-Not yet done
+Multiple slurm jobs have been created to generate reports for the different types of analysis on different cases
 
 ## Q9 : Single GPU acceleration 
 
@@ -94,4 +97,5 @@ We do not intend to do this point
 
 ### 3 chilis : Multi-GPU version
 
-We do intend to write a multi-GPU version of the code. By the time of submission of the intermediate deadline, LUCIA did not have the tools necessary to compile OMP-GPU and MPI as there was no OpenMPI compiled with `clang`
+We do intend to write a multi-GPU version of the code. 
+Currently the code inside `mpi_gpu_single_point` is very slow and is aimed to output only the value at one point.
