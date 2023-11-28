@@ -1,2 +1,5 @@
 *_out_*.dat
 scorep_*
+**/.output*
+**/scorep*
+**/.likwidscript*

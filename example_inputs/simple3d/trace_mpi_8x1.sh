@@ -8,7 +8,6 @@
 #SBATCH --mem-per-cpu=1024 # 1GB
 #SBATCH --partition=batch
 
-# Loading Scalasca will also load OpenMPI
 module load Scalasca
 module load OpenMPI
 
