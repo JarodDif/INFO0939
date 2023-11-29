@@ -1,8 +1,8 @@
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <omp.h>
 
 #include "fdtd.h"
 
@@ -35,10 +35,15 @@ int main(int argc, const char *argv[]) {
 
   double start = GET_TIME();
 
+  double apply_time, output_time, updateP_time, updateV_time, swap_time;
+  double t1, t2;
+
   #pragma omp target data map(to: simdata)
   for (int tstep = 0; tstep <= numtimesteps; tstep++) {
-    
+    t1 = GET_TIME();
     apply_source(&simdata, tstep);
+    t2 = GET_TIME();
+    apply_time += t2 - t1;
 
     if (simdata.params.outrate > 0 && (tstep % simdata.params.outrate) == 0) {
       
@@ -70,6 +75,8 @@ int main(int argc, const char *argv[]) {
         write_output(&simdata.params.outputs[i], output_data, tstep, time);
       }
     }
+    t1 = GET_TIME();
+    output_time += t1 - t2;
 
     if (tstep > 0 && tstep % (numtimesteps / 10) == 0) {
       printf("step %8d/%d", tstep, numtimesteps);
@@ -87,10 +94,20 @@ int main(int argc, const char *argv[]) {
       fflush(stdout);
     }
 
+    t1 = GET_TIME();
     update_pressure(&simdata);
+    t2 = GET_TIME();
+    updateP_time += t2 - t1;
     update_velocities(&simdata);
+    t1 = GET_TIME();
+    updateV_time += t1 - t2;
     swap_timesteps(&simdata);
+    t2 = GET_TIME();
+    swap_time += t2 - t1;
   }
+
+  printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
+    cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
 
   double elapsed = GET_TIME() - start;
   double numupdates =

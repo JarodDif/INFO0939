@@ -115,8 +115,8 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-          double time = tstep * psimdata.params.dt;
-          write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
+        double time = tstep * psimdata.params.dt;
+        write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
       }
     }
     t1 = GET_TIME();
@@ -627,6 +627,8 @@ int write_output(output_t *output, process_data_t *data, grid_t* global_grid, in
   int endm = (type == CUTX || type == POINT) ? mbar + 1 : PNUMNODESX(data);
   int endn = (type == CUTY || type == POINT) ? nbar + 1 : PNUMNODESY(data);
   int endp = (type == CUTZ || type == POINT) ? pbar + 1 : PNUMNODESZ(data);
+
+  #pragma omp target update from(data->vals[PINDEX3D(data, mbar, nbar, pbar):1])
 
   data_t *tmpdata = allocate_data(&output->grid);
 
