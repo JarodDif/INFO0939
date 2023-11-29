@@ -1549,11 +1549,16 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
 }
 
 void swap_timesteps(process_simulation_data_t *psimdata) {
+
+  const int numnodesx = PNUMNODESX(psimdata->pold);
+  const int numnodesy = PNUMNODESY(psimdata->pold);
+  const int numnodesz = PNUMNODESZ(psimdata->pold);
+
   #pragma omp teams distribute
-  for(int pbar = 0; pbar < PNUMNODESZ(psimdata->pold); pbar++){
+  for(int pbar = 0; pbar < numnodesz; pbar++){
     #pragma omp parallel for collapse(2)
-    for(int nbar = 0; nbar < PNUMNODESY(psimdata->pold); nbar++){
-      for(int mbar = 0; mbar < PNUMNODESX(psimdata->pold); mbar++){
+    for(int nbar = 0; nbar < numnodesy; nbar++){
+      for(int mbar = 0; mbar < numnodesx; mbar++){
         PROCESS_SETVALUE_INSIDE(psimdata->pold, mbar, nbar, pbar, 
           PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, pbar));
         PROCESS_SETVALUE_INSIDE(psimdata->vxold, mbar, nbar, pbar, 

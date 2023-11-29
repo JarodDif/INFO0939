@@ -106,8 +106,8 @@ int main(int argc, const char *argv[]) {
     swap_time += t2 - t1;
   }
 
-  printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
-    cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
+  printf("%10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
+    apply_time, output_time, updateP_time, updateV_time, swap_time);
 
   double elapsed = GET_TIME() - start;
   double numupdates =
