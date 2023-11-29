@@ -83,10 +83,14 @@ int main(int argc, char *argv[]) {
   int numtimesteps = floor(psimdata.params.maxt / psimdata.params.dt);
 
   double start = GET_TIME();
+  double apply_time, output_time, updateP_time, updateV_time, swap_time;
+  double t1, t2;
   #pragma omp target data map(to:psimdata)
   for (int tstep = 0; tstep <= numtimesteps; tstep++) {
+    t1 = GET_TIME(); 
     apply_source(&psimdata, tstep);
-
+    t2 = GET_TIME();
+    apply_time += t2 - t1;
     // Need to collect data from all the different processes
     if (psimdata.params.outrate > 0 && (tstep % psimdata.params.outrate) == 0) {
       int send_size = PNUMNODESX(psimdata.pold)*PNUMNODESY(psimdata.pold)*PNUMNODESZ(psimdata.pold);
@@ -115,6 +119,8 @@ int main(int argc, char *argv[]) {
           write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
       }
     }
+    t1 = GET_TIME()
+    output_time += t1 - t2;
 
     if(cart_rank == 0){
       if (tstep > 0 && tstep % (numtimesteps / 10) == 0) {
@@ -133,11 +139,20 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
       }
     }
-
+    t1 = GET_TIME();
     update_pressure(&psimdata);
+    t2 = GET_TIME();
+    updateP_time += t2 - t1;
     update_velocities(&psimdata);
+    t1 = GET_TIME();
+    updateV_time += t1 - t2;
     swap_timesteps(&psimdata);
+    t2 = GET_TIME();
+    swap_time += t2 - t1;
   }
+
+  print("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
+    cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
 
   if(cart_rank == 0){
     double elapsed = GET_TIME() - start;
