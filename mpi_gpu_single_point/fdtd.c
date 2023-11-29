@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
           write_output(&psimdata.params.outputs[i], output_data, &psimdata.global_grid ,tstep, time);
       }
     }
-    t1 = GET_TIME()
+    t1 = GET_TIME();
     output_time += t1 - t2;
 
     if(cart_rank == 0){
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     swap_time += t2 - t1;
   }
 
-  print("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
+  printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
     cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
 
   if(cart_rank == 0){
