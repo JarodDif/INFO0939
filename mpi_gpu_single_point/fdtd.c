@@ -1216,9 +1216,9 @@ void update_velocities(process_simulation_data_t *psimdata) {
   double *bpx = psimdata->buffer_px,
     *bpy = psimdata->buffer_py,
     *bpz = psimdata->buffer_pz,
-    *gvr = psimdata->buffer_py,
-    *gvb = psimdata->buffer_py,
-    *gvu = psimdata->buffer_py;
+    *gvr = psimdata->pnew->ghostvals[RIGHT],
+    *gvb = psimdata->pnew->ghostvals[BACK ],
+    *gvu = psimdata->pnew->ghostvals[UP   ];
 
   #pragma omp target data use_device_ptr(psimdata)
   {
