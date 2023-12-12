@@ -1067,9 +1067,6 @@ void update_pressure(process_simulation_data_t *psimdata) {
       for (nbar = 0; nbar < pnumnodesy; nbar++){
         psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
       }
-    }
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
       #pragma omp parallel for
       for (mbar = 0; mbar < pnumnodesx; mbar++){
         psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
@@ -1115,9 +1112,6 @@ void update_pressure(process_simulation_data_t *psimdata) {
       for (n = startn; n <= endn; n++) {
         update_pressure_routine(psimdata, startm, n, p, LEFT);
       }
-    }
-    #pragma omp distribute
-    for (p = startp; p <= endp; p++) {
       #pragma omp parallel for
       for (m = startm + 1; m <= endm; m++) {
         update_pressure_routine(psimdata, m, startn, p, FRONT);
@@ -1192,9 +1186,6 @@ void update_velocities(process_simulation_data_t *psimdata) {
       for (nbar = 0; nbar < pnumnodesy; nbar++){
         psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
       }
-    }
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
       #pragma omp parallel for
       for (mbar = 0; mbar < pnumnodesx; mbar++){
         psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
@@ -1209,7 +1200,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
     }
   }
 
-  #pragma omp target data use_device_addr(psimdata)
+  #pragma omp target data use_device_ptr(psimdata)
   {
     MPI_Isend(psimdata->buffer_px, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_send[0]);
     MPI_Isend(psimdata->buffer_py, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
@@ -1233,22 +1224,22 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  #pragma omp parallel
+  #pragma omp teams
   {
-    #pragma omp for
+    #pragma omp distribute
     for (p = startp; p <= endp; p++) {
+      #pragma omp parallel for
       for (n = startn; n <= endn; n++) {
         update_velocity_routine(psimdata, endm, n, p);
       }
-    }
-    #pragma omp for
-    for (p = startp; p <= endp; p++) {
+      #pragma omp parallel for
       for (m = startm; m < endm; m++) {
         update_velocity_routine(psimdata, m, endn, p);
       }
     }
-    #pragma omp for
+    #pragma omp distribute
     for (n = startn; n < endn; n++){
+      #pragma omp parallel for
       for (m = startm; m < endm; m++){
         update_velocity_routine(psimdata, m, n, endp);
       }
