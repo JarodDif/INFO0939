@@ -151,8 +151,13 @@ int main(int argc, char *argv[]) {
     swap_time += t2 - t1;
   }
 
+  printf("Out of loop");
+  fflush(stdout);
+
   printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
     cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
+
+  fflush(stdout);
 
   if(cart_rank == 0){
     double elapsed = GET_TIME() - start;
@@ -160,6 +165,7 @@ int main(int argc, char *argv[]) {
         (double)NUMNODESTOT(psimdata.global_grid) * (numtimesteps + 1);
     double updatespers = numupdates / elapsed / 1e6;
     printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed, updatespers);
+    fflush(stdout);
   }
 
   finalize_simulation(&psimdata);
