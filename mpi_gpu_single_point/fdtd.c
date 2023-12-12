@@ -1062,10 +1062,9 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   #pragma omp target teams distribute
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
-      #pragma omp parallel for
-      for (nbar = 0; nbar < pnumnodesy; nbar++){
-        psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
-      }
+    #pragma omp parallel for
+    for (nbar = 0; nbar < pnumnodesy; nbar++){
+      psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
     }
   }
   #pragma omp target teams distribute
@@ -1082,7 +1081,6 @@ void update_pressure(process_simulation_data_t *psimdata) {
       psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
     }
   }
-  
 
   double* bvx = psimdata->buffer_vx,
     *bvy = psimdata->buffer_vy,
@@ -1102,7 +1100,7 @@ void update_pressure(process_simulation_data_t *psimdata) {
     MPI_Irecv(gvd, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_recv[2]);
   }
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (p = startp + 1; p <= endp; p++) {
     #pragma omp parallel for collapse(2)
     for (n = startn + 1; n <= endn; n++) {
@@ -1114,25 +1112,25 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUSES_IGNORE);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (p = startp; p <= endp; p++) {
-      #pragma omp parallel for
-      for (n = startn; n <= endn; n++) {
-        update_pressure_routine(psimdata, startm, n, p, LEFT);
-      }
-      #pragma omp parallel for
-      for (m = startm + 1; m <= endm; m++) {
-        update_pressure_routine(psimdata, m, startn, p, FRONT);
-      }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (n = startn; n <= endn; n++) {
+      update_pressure_routine(psimdata, startm, n, p, LEFT);
     }
-    #pragma omp distribute
-    for (n = startn + 1; n <= endn; n++){
-      #pragma omp parallel for
-      for (m = startm + 1; m <= endm; m++){
-        update_pressure_routine(psimdata, m, n, startp, DOWN);
-      }
+  }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (m = startm + 1; m <= endm; m++) {
+      update_pressure_routine(psimdata, m, startn, p, FRONT);
+    }
+  }
+  #pragma omp target teams distribute
+  for (n = startn + 1; n <= endn; n++){
+    #pragma omp parallel for
+    for (m = startm + 1; m <= endm; m++){
+      update_pressure_routine(psimdata, m, n, startp, DOWN);
     }
   }
 
@@ -1229,7 +1227,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
   }
 
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (p = startp; p <= endp - 1; p++) {
     #pragma omp parallel for collapse(2)
     for (n = startn; n <= endn - 1; n++) {
@@ -1241,25 +1239,25 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (p = startp; p <= endp; p++) {
-      #pragma omp parallel for
-      for (n = startn; n <= endn; n++) {
-        update_velocity_routine(psimdata, endm, n, p);
-      }
-      #pragma omp parallel for
-      for (m = startm; m < endm; m++) {
-        update_velocity_routine(psimdata, m, endn, p);
-      }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (n = startn; n <= endn; n++) {
+      update_velocity_routine(psimdata, endm, n, p);
     }
-    #pragma omp distribute
-    for (n = startn; n < endn; n++){
-      #pragma omp parallel for
-      for (m = startm; m < endm; m++){
-        update_velocity_routine(psimdata, m, n, endp);
-      }
+  }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (m = startm; m < endm; m++) {
+      update_velocity_routine(psimdata, m, endn, p);
+    }
+  }
+  #pragma omp target teams distribute
+  for (n = startn; n < endn; n++){
+    #pragma omp parallel for
+    for (m = startm; m < endm; m++){
+      update_velocity_routine(psimdata, m, n, endp);
     }
   }
 
