@@ -1060,7 +1060,7 @@ void update_pressure(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(pold), startn = STARTN(pold), endn = ENDN(pold),
                      pnumnodesz = PNUMNODESZ(pold), startp = STARTP(pold), endp = ENDP(pold);
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
       #pragma omp parallel for
       for (nbar = 0; nbar < pnumnodesy; nbar++){
@@ -1068,14 +1068,14 @@ void update_pressure(process_simulation_data_t *psimdata) {
       }
     }
   }
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     #pragma omp parallel for
     for (mbar = 0; mbar < pnumnodesx; mbar++){
       psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
     }
   }
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     #pragma omp parallel for
     for (mbar = 0; mbar < pnumnodesx; mbar++){
@@ -1188,21 +1188,21 @@ void update_velocities(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(vxold), startn = STARTN(vxold), endn = ENDN(vxold),
                      pnumnodesz = PNUMNODESZ(vxold), startp = STARTP(vxold), endp = ENDP(vxold);
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (pbar = 0; pbar < pnumnodesz; pbar++) {
     #pragma omp parallel for
     for (nbar = 0; nbar < pnumnodesy; nbar++){
       psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
     }
   }
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (pbar = 0; pbar < pnumnodesz; pbar++) {    
     #pragma omp parallel for
     for (mbar = 0; mbar < pnumnodesx; mbar++){
       psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
     }
   }
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (nbar = 0; nbar < pnumnodesy; nbar++) {
     #pragma omp parallel for
     for (mbar = 0; mbar < pnumnodesx; mbar++){
