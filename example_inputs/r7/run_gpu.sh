@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name="job_custom"
-#SBATCH --output="run_gpu_custom.out"
+#SBATCH --job-name="gpu_r7"
+#SBATCH --output="run_gpu.out"
 #SBATCH --partition=gpu
 #SBATCH --ntasks=1
 #SBATCH --mem=10G
@@ -12,4 +12,4 @@ module load Clang/16.0.6-GCCcore-11.3.0-CUDA-11.7.0
 
 export OMP_TARGET_OFFLOAD=MANDATORY
 
-../../gpu/fdtd param_custom.txt
+../../gpu/fdtd param_r7.txt
