@@ -151,10 +151,10 @@ int main(int argc, char *argv[]) {
     swap_time += t2 - t1;
   }
 
-  printf("Out of loop");
+  printf("Out of loop\n");
   fflush(stdout);
 
-  printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
+  printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf\n", 
     cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
 
   fflush(stdout);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 
   finalize_simulation(&psimdata);
 
-  MPI_Finalize();
+  //MPI_Finalize();
 
   return 0;
 }
