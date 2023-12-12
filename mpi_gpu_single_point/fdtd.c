@@ -151,8 +151,13 @@ int main(int argc, char *argv[]) {
     swap_time += t2 - t1;
   }
 
+  printf("Out of loop");
+  fflush(stdout);
+
   printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf", 
     cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
+
+  fflush(stdout);
 
   if(cart_rank == 0){
     double elapsed = GET_TIME() - start;
@@ -160,6 +165,7 @@ int main(int argc, char *argv[]) {
         (double)NUMNODESTOT(psimdata.global_grid) * (numtimesteps + 1);
     double updatespers = numupdates / elapsed / 1e6;
     printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed, updatespers);
+    fflush(stdout);
   }
 
   finalize_simulation(&psimdata);
@@ -1081,15 +1087,22 @@ void update_pressure(process_simulation_data_t *psimdata) {
     }
   }
 
-  #pragma omp target data use_device_addr(psimdata)
-  {
-    MPI_Isend(psimdata->buffer_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
-    MPI_Isend(psimdata->buffer_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
-    MPI_Isend(psimdata->buffer_vz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_send[2]);
+  double* bvx = psimdata->buffer_vx,
+    *bvy = psimdata->buffer_vy,
+    *bvz = psimdata->buffer_vz,
+    *gvl = psimdata->vxold->ghostvals[LEFT ],
+    *gvf = psimdata->vyold->ghostvals[FRONT],
+    *gvd = psimdata->vzold->ghostvals[DOWN ];
 
-    MPI_Irecv(psimdata->vxold->ghostvals[LEFT ], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_recv[0]);
-    MPI_Irecv(psimdata->vyold->ghostvals[FRONT], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_recv[1]);
-    MPI_Irecv(psimdata->vzold->ghostvals[DOWN ], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_recv[2]);
+  #pragma omp target data use_device_ptr(bvx, bvy, bvz, gvl, gvf, gvd)
+  {
+    MPI_Isend(bvx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
+    MPI_Isend(bvy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
+    MPI_Isend(bvz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_send[2]);
+
+    MPI_Irecv(gvl, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_recv[0]);
+    MPI_Irecv(gvf, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_recv[1]);
+    MPI_Irecv(gvd, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_recv[2]);
   }
 
   #pragma omp teams distribute
@@ -1200,15 +1213,22 @@ void update_velocities(process_simulation_data_t *psimdata) {
     }
   }
 
+  double *bpx = psimdata->buffer_px,
+    *bpy = psimdata->buffer_py,
+    *bpz = psimdata->buffer_pz,
+    *gvr = psimdata->buffer_py,
+    *gvb = psimdata->buffer_py,
+    *gvu = psimdata->buffer_py;
+
   #pragma omp target data use_device_ptr(psimdata)
   {
-    MPI_Isend(psimdata->buffer_px, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_send[0]);
-    MPI_Isend(psimdata->buffer_py, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
-    MPI_Isend(psimdata->buffer_pz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_send[2]);
+    MPI_Isend(bpx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_send[0]);
+    MPI_Isend(bpy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
+    MPI_Isend(bpz, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_send[2]);
 
-    MPI_Irecv(psimdata->pnew->ghostvals[RIGHT], pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_recv[0]);
-    MPI_Irecv(psimdata->pnew->ghostvals[BACK ], pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_recv[1]);
-    MPI_Irecv(psimdata->pnew->ghostvals[UP   ], pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_recv[2]);
+    MPI_Irecv(gvr, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_recv[0]);
+    MPI_Irecv(gvb, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_recv[1]);
+    MPI_Irecv(gvu, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_recv[2]);
   }
 
 
