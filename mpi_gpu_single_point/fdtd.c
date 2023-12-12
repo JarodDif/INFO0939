@@ -1081,7 +1081,14 @@ void update_pressure(process_simulation_data_t *psimdata) {
     }
   }
 
-  #pragma omp target data use_device_addr(psimdata)
+  double* bvx = psimdata->buffer_vx,
+    bvy = psimdata->buffer_vy,
+    bvz = psimdata->buffer_vz,
+    gvl = psimdata->vxold->ghostvals[LEFT ],
+    gvf = psimdata->vyold->ghostvals[FRONT],
+    gvd = psimdata->vzold->ghostvals[DOWN ];
+
+  #pragma omp target data use_device_ptr(bvx, bvy, bvz, gvl, gvf, gvd)
   {
     MPI_Isend(psimdata->buffer_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
     MPI_Isend(psimdata->buffer_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
