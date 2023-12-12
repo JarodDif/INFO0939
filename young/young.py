@@ -1,7 +1,5 @@
 import numpy as np
 import struct
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
 
 dims = (101, 2, 101)
 lims = (0,1), (0,1), (0,1)
