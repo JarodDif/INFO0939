@@ -1060,27 +1060,29 @@ void update_pressure(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(pold), startn = STARTN(pold), endn = ENDN(pold),
                      pnumnodesz = PNUMNODESZ(pold), startp = STARTP(pold), endp = ENDP(pold);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
+  #pragma omp teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
       #pragma omp parallel for
       for (nbar = 0; nbar < pnumnodesy; nbar++){
         psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
       }
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
-      }
-    }
-    #pragma omp distribute
-    for (nbar = 0; nbar < pnumnodesy; nbar++) {
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
-      }
     }
   }
+  #pragma omp teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
+    }
+  }
+  #pragma omp teams distribute
+  for (nbar = 0; nbar < pnumnodesy; nbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
+    }
+  }
+  
 
   double* bvx = psimdata->buffer_vx,
     *bvy = psimdata->buffer_vy,
@@ -1186,25 +1188,25 @@ void update_velocities(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(vxold), startn = STARTN(vxold), endn = ENDN(vxold),
                      pnumnodesz = PNUMNODESZ(vxold), startp = STARTP(vxold), endp = ENDP(vxold);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
-      #pragma omp parallel for
-      for (nbar = 0; nbar < pnumnodesy; nbar++){
-        psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
-      }
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
-      }
+  #pragma omp teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
+    #pragma omp parallel for
+    for (nbar = 0; nbar < pnumnodesy; nbar++){
+      psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
     }
-    #pragma omp distribute
-    for (nbar = 0; nbar < pnumnodesy; nbar++) {
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_pz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, 0);
-      }
+  }
+  #pragma omp teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {    
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
+    }
+  }
+  #pragma omp teams distribute
+  for (nbar = 0; nbar < pnumnodesy; nbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, 0);
     }
   }
 
