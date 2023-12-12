@@ -1550,7 +1550,7 @@ void swap_timesteps(process_simulation_data_t *psimdata) {
   const int numnodesy = PNUMNODESY(psimdata->pold);
   const int numnodesz = PNUMNODESZ(psimdata->pold);
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for(int pbar = 0; pbar < numnodesz; pbar++){
     #pragma omp parallel for collapse(2)
     for(int nbar = 0; nbar < numnodesy; nbar++){
