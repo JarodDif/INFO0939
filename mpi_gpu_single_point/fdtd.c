@@ -151,13 +151,8 @@ int main(int argc, char *argv[]) {
     swap_time += t2 - t1;
   }
 
-  printf("Out of loop\n");
-  fflush(stdout);
-
   printf("%d : %10.3lf | %10.3lf | %10.3lf | %10.3lf | %10.3lf\n", 
     cart_rank, apply_time, output_time, updateP_time, updateV_time, swap_time);
-
-  fflush(stdout);
 
   if(cart_rank == 0){
     double elapsed = GET_TIME() - start;
@@ -170,7 +165,7 @@ int main(int argc, char *argv[]) {
 
   finalize_simulation(&psimdata);
 
-  //MPI_Finalize();
+  MPI_Finalize();
 
   return 0;
 }
@@ -1065,25 +1060,25 @@ void update_pressure(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(pold), startn = STARTN(pold), endn = ENDN(pold),
                      pnumnodesz = PNUMNODESZ(pold), startp = STARTP(pold), endp = ENDP(pold);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
-      #pragma omp parallel for
-      for (nbar = 0; nbar < pnumnodesy; nbar++){
-        psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
-      }
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
-      }
+  #pragma omp target teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
+    #pragma omp parallel for
+    for (nbar = 0; nbar < pnumnodesy; nbar++){
+      psimdata->buffer_vx[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->vxold, pnumnodesx-1, nbar, pbar);
     }
-    #pragma omp distribute
-    for (nbar = 0; nbar < pnumnodesy; nbar++) {
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
-      }
+  }
+  #pragma omp target teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_vy[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vyold, mbar, pnumnodesy-1, pbar);
+    }
+  }
+  #pragma omp target teams distribute
+  for (nbar = 0; nbar < pnumnodesy; nbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_vz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->vzold, mbar, nbar, pnumnodesz-1);
     }
   }
 
@@ -1105,7 +1100,7 @@ void update_pressure(process_simulation_data_t *psimdata) {
     MPI_Irecv(gvd, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[DOWN ], SEND_Z, cart_comm, &request_recv[2]);
   }
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (p = startp + 1; p <= endp; p++) {
     #pragma omp parallel for collapse(2)
     for (n = startn + 1; n <= endn; n++) {
@@ -1117,25 +1112,25 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUSES_IGNORE);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (p = startp; p <= endp; p++) {
-      #pragma omp parallel for
-      for (n = startn; n <= endn; n++) {
-        update_pressure_routine(psimdata, startm, n, p, LEFT);
-      }
-      #pragma omp parallel for
-      for (m = startm + 1; m <= endm; m++) {
-        update_pressure_routine(psimdata, m, startn, p, FRONT);
-      }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (n = startn; n <= endn; n++) {
+      update_pressure_routine(psimdata, startm, n, p, LEFT);
     }
-    #pragma omp distribute
-    for (n = startn + 1; n <= endn; n++){
-      #pragma omp parallel for
-      for (m = startm + 1; m <= endm; m++){
-        update_pressure_routine(psimdata, m, n, startp, DOWN);
-      }
+  }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (m = startm + 1; m <= endm; m++) {
+      update_pressure_routine(psimdata, m, startn, p, FRONT);
+    }
+  }
+  #pragma omp target teams distribute
+  for (n = startn + 1; n <= endn; n++){
+    #pragma omp parallel for
+    for (m = startm + 1; m <= endm; m++){
+      update_pressure_routine(psimdata, m, n, startp, DOWN);
     }
   }
 
@@ -1191,34 +1186,34 @@ void update_velocities(process_simulation_data_t *psimdata) {
                      pnumnodesy = PNUMNODESY(vxold), startn = STARTN(vxold), endn = ENDN(vxold),
                      pnumnodesz = PNUMNODESZ(vxold), startp = STARTP(vxold), endp = ENDP(vxold);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (pbar = 0; pbar < pnumnodesz; pbar++) {
-      #pragma omp parallel for
-      for (nbar = 0; nbar < pnumnodesy; nbar++){
-        psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
-      }
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
-      }
+  #pragma omp target teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {
+    #pragma omp parallel for
+    for (nbar = 0; nbar < pnumnodesy; nbar++){
+      psimdata->buffer_px[pbar * pnumnodesy + nbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, 0, nbar, pbar);
     }
-    #pragma omp distribute
-    for (nbar = 0; nbar < pnumnodesy; nbar++) {
-      #pragma omp parallel for
-      for (mbar = 0; mbar < pnumnodesx; mbar++){
-        psimdata->buffer_pz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, 0);
-      }
+  }
+  #pragma omp target teams distribute
+  for (pbar = 0; pbar < pnumnodesz; pbar++) {    
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_py[pbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, 0, pbar);
+    }
+  }
+  #pragma omp target teams distribute
+  for (nbar = 0; nbar < pnumnodesy; nbar++) {
+    #pragma omp parallel for
+    for (mbar = 0; mbar < pnumnodesx; mbar++){
+      psimdata->buffer_pz[nbar * pnumnodesx + mbar] = PROCESS_GETVALUE_INSIDE(psimdata->pnew, mbar, nbar, 0);
     }
   }
 
   double *bpx = psimdata->buffer_px,
     *bpy = psimdata->buffer_py,
     *bpz = psimdata->buffer_pz,
-    *gvr = psimdata->buffer_py,
-    *gvb = psimdata->buffer_py,
-    *gvu = psimdata->buffer_py;
+    *gvr = psimdata->pnew->ghostvals[RIGHT],
+    *gvb = psimdata->pnew->ghostvals[BACK ],
+    *gvu = psimdata->pnew->ghostvals[UP   ];
 
   #pragma omp target data use_device_ptr(psimdata)
   {
@@ -1232,7 +1227,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
   }
 
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for (p = startp; p <= endp - 1; p++) {
     #pragma omp parallel for collapse(2)
     for (n = startn; n <= endn - 1; n++) {
@@ -1244,25 +1239,25 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  #pragma omp teams
-  {
-    #pragma omp distribute
-    for (p = startp; p <= endp; p++) {
-      #pragma omp parallel for
-      for (n = startn; n <= endn; n++) {
-        update_velocity_routine(psimdata, endm, n, p);
-      }
-      #pragma omp parallel for
-      for (m = startm; m < endm; m++) {
-        update_velocity_routine(psimdata, m, endn, p);
-      }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (n = startn; n <= endn; n++) {
+      update_velocity_routine(psimdata, endm, n, p);
     }
-    #pragma omp distribute
-    for (n = startn; n < endn; n++){
-      #pragma omp parallel for
-      for (m = startm; m < endm; m++){
-        update_velocity_routine(psimdata, m, n, endp);
-      }
+  }
+  #pragma omp target teams distribute
+  for (p = startp; p <= endp; p++) {
+    #pragma omp parallel for
+    for (m = startm; m < endm; m++) {
+      update_velocity_routine(psimdata, m, endn, p);
+    }
+  }
+  #pragma omp target teams distribute
+  for (n = startn; n < endn; n++){
+    #pragma omp parallel for
+    for (m = startm; m < endm; m++){
+      update_velocity_routine(psimdata, m, n, endp);
     }
   }
 
@@ -1555,7 +1550,7 @@ void swap_timesteps(process_simulation_data_t *psimdata) {
   const int numnodesy = PNUMNODESY(psimdata->pold);
   const int numnodesz = PNUMNODESZ(psimdata->pold);
 
-  #pragma omp teams distribute
+  #pragma omp target teams distribute
   for(int pbar = 0; pbar < numnodesz; pbar++){
     #pragma omp parallel for collapse(2)
     for(int nbar = 0; nbar < numnodesy; nbar++){
