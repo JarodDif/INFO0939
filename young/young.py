@@ -30,9 +30,9 @@ def write_data(f, vals):
                 write_double(f, vals[m,n,p])
 
 vals                    = np.full(dims, 340)
-vals[:, :, dims[2]//2]  = 0
-vals[45, :, dims[2]//2] = 340
-vals[55, :, dims[2]//2] = 340
+vals[:, :, dims[2]//4]  = 0
+vals[45, :, dims[2]//4] = 340
+vals[55, :, dims[2]//4] = 340
 
 im = plt.imshow(vals[:, :, dims[2]//2], aspect='auto')
 plt.colorbar(im)
