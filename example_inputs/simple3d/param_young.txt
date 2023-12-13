@@ -2,7 +2,7 @@
 0.5e-6
 0.001
 50
-in_c_custom_young.dat
+in_c_young.dat
 in_rho_3d.dat
 sine 3400 0.5 0.5 0.5
 cut_y pressure out_p_custom_young.dat 0.5
