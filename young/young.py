@@ -33,7 +33,7 @@ vals[:, :, dims[2]//4-1:dims[2]//4+2]  = 0
 vals[45, :, dims[2]//4-1:dims[2]//4+2] = 340
 vals[55, :, dims[2]//4-1:dims[2]//4+2] = 340
 
-with open("../example_inputs/simple3d/in_c_young.dat", "wb") as f:
+with open("../example_inputs/young/in_c_young.dat", "wb") as f:
     write_dims(f,dims)
     write_lims(f,lims)
     write_data(f,vals)
