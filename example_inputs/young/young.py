@@ -33,17 +33,17 @@ vals[:, :, dims[2]//4-1:dims[2]//4+2]  = 0
 vals[45, :, dims[2]//4-1:dims[2]//4+2] = 340
 vals[55, :, dims[2]//4-1:dims[2]//4+2] = 340
 
-with open("../example_inputs/young/in_c_young_abs.dat", "wb") as f:
+with open("./in_c_young_abs.dat", "wb") as f:
     write_dims(f,dims)
     write_lims(f,lims)
     write_data(f,vals)
     
 vals = np.full(dims, 340)
-vals[:, :, dims[2]//4-1:dims[2]//4+2]  = -340
-vals[45, :, dims[2]//4-1:dims[2]//4+2] = 340
-vals[55, :, dims[2]//4-1:dims[2]//4+2] = 340
+vals[:, :, dims[2]//4-1:dims[2]//4+5]  = -340
+vals[45, :, dims[2]//4-1:dims[2]//4+5] = 340
+vals[55, :, dims[2]//4-1:dims[2]//4+5] = 340
 
-with open("../example_inputs/young/in_c_young_ref.dat", "wb") as f:
+with open("./in_c_young_ref.dat", "wb") as f:
     write_dims(f,dims)
     write_lims(f,lims)
     write_data(f,vals)
