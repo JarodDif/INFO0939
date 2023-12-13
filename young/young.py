@@ -1,6 +1,5 @@
 import numpy as np
 import struct
-import matplotlib.pyplot as plt
 
 dims = (101, 2, 101)
 lims = (0,1), (0,1), (0,1)
@@ -29,22 +28,10 @@ def write_data(f, vals):
             for m in range(vals.shape[0]):
                 write_double(f, vals[m,n,p])
 
-vals                    = np.full(dims, 340)
-vals[:, :, dims[2]//4]  = 0
-vals[45, :, dims[2]//4] = 340
-vals[55, :, dims[2]//4] = 340
-
-im = plt.imshow(vals[:, :, dims[2]//2], aspect='auto')
-plt.colorbar(im)
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(projection="3d")
-
-indices = np.where(vals == 0)
-print(indices)
-ax.scatter(*indices, c="k")
-plt.show()
+vals = np.full(dims, 340)
+vals[:, :, dims[2]//4-1:dims[2]//4+2]  = 0
+vals[45, :, dims[2]//4-1:dims[2]//4+2] = 340
+vals[55, :, dims[2]//4-1:dims[2]//4+2] = 340
 
 with open("../example_inputs/simple3d/in_c_custom_young.dat", "wb") as f:
     write_dims(f,dims)
