@@ -13,4 +13,4 @@ module load OpenMPI/4.1.5-Clang-16.0.6-GFortran-11.3.0-CUDA-11.7.0
 
 export OMP_TARGET_OFFLOAD=MANDATORY
 
-srun ../../mpi_gpu_single_point/fdtd param_custom.txt
+srun ../../mpi_gpu_single_point/fdtd param_r7.txt

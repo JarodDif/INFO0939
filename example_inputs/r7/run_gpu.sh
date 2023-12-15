@@ -12,4 +12,4 @@ module load Clang/16.0.6-GCCcore-11.3.0-CUDA-11.7.0
 
 export OMP_TARGET_OFFLOAD=MANDATORY
 
-../../gpu/fdtd param_r7.txt
+srun ../../gpu/fdtd param_r7.txt
