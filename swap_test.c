@@ -26,8 +26,7 @@ int main() {
     #pragma omp target enter data map(to: host_a[0:N], host_b[0:N])
 
     // Swap pointers on the device
-    #pragma omp target teams distribute parallel for
-    for (int i = 0; i < N; i++) {
+    #pragma omp target{
         swap_pointers(&host_a, &host_b);
     }
 
