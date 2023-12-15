@@ -2,9 +2,10 @@
 #SBATCH --job-name="mgpu_r7"
 #SBATCH --output="run_mgpu.out"
 #SBATCH --partition=gpu
-#SBATCH --ntasks=2
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
 #SBATCH --gpus-per-task=1
-#SBATCH --mem-per-cpu=10G
+#SBATCH --mem-per-cpu=20G
 #SBATCH --time=1:00:00
 #SBATCH --account=ulghpsc
 
