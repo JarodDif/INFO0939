@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name="gpu_point"
-#SBATCH --output="run_gpu.out"
+#SBATCH --job-name="swap_test"
+#SBATCH --output="run_swap_test.out"
 #SBATCH --partition=gpu
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=4G
@@ -12,4 +12,4 @@ module load Clang/16.0.6-GCCcore-11.3.0-CUDA-11.7.0
 
 export OMP_TARGET_OFFLOAD=MANDATORY
 
-srun ../../gpu/fdtd param_point_3d.txt
+srun ./swap_test
