@@ -22,16 +22,20 @@ int main() {
         host_b[i] = 2 * i;
     }
 
+    int test = -1;
+
     // Map pointers to device memory
-    #pragma omp target enter data map(to: host_a[0:N], host_b[0:N])
+    #pragma omp target enter data map(to: host_a[0:N], host_b[0:N]) map(to: test)
 
     // Swap pointers on the device
-    #pragma omp target{
+    #pragma omp target
+    {
         swap_pointers(&host_a, &host_b);
+        test = host_a[N-1];
     }
 
     // Map pointers back to the host
-    #pragma omp target exit data map(from: host_a[0:N], host_b[0:N])
+    #pragma omp target exit data map(from: host_a[0:N], host_b[0:N]) map(from, test)
 
     // Verify the result on the host
     printf("After swapping:\n");
@@ -46,6 +50,7 @@ int main() {
         printf("%d ", host_b[i]);
     }
     printf("\n");
+    printf("test: %d\n", test);
 
     // Free allocated memory
     free(host_a);
