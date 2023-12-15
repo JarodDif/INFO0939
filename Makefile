@@ -86,4 +86,4 @@ endif
 
 # removes the build programs
 clean:
-	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_OMP) $(OUT_HYBRID) $(OUT_GPU)
+	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_OMP) $(OUT_HYBRID) $(OUT_GPU) $(OUT_MGPU)
