@@ -28,7 +28,7 @@ int main() {
     // Swap pointers on the device
     #pragma omp target teams
     {
-        double *device_a = host_a,
+        int *device_a = host_a,
             *device_b = host_b;
         swap_pointers(&device_a, &device_b);
     }
@@ -48,7 +48,6 @@ int main() {
         printf("%d ", host_b[i]);
     }
     printf("\n");
-    printf("test: %d\n", test);
 
     // Free allocated memory
     free(host_a);
