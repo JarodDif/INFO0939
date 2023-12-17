@@ -1214,7 +1214,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
     *gvb = psimdata->pnew->ghostvals[BACK ],
     *gvu = psimdata->pnew->ghostvals[UP   ];
 
-  #pragma omp target data use_device_ptr(psimdata)
+  #pragma omp target data use_device_ptr(bpx, bpy, bpz, gvr, gvb, gvu)
   {
     MPI_Isend(bpx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_send[0]);
     MPI_Isend(bpy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
@@ -1231,6 +1231,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
     if(psimdata->pnew->ghostvals[RIGHT][i] != 0){
       printf("Got at index %5d value %6.3e\n", i, psimdata->pnew->ghostvals[RIGHT][i]);
     }
+    break;
   }
 
   #pragma omp target teams distribute
