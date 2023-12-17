@@ -693,8 +693,8 @@ int open_outputfile(output_t *output, process_grid_t *simgrid, grid_t* global_gr
     coords[0], coords[1], coords[2], output->filename);
 
   FILE *fp = NULL;
-  if ((fp = create_datafile(grid, output->filename)) == NULL) {
-    DEBUG_PRINTF("Failed to open output file: '%s'", output->filename);
+  if ((fp = create_datafile(grid, buffer_filename)) == NULL) {
+    DEBUG_PRINTF("Failed to open output file: '%s'", buffer_filename);
     return 1;
   }
 
