@@ -1225,6 +1225,13 @@ void update_velocities(process_simulation_data_t *psimdata) {
     MPI_Irecv(gvu, pnumnodesx*pnumnodesy, MPI_DOUBLE, neighbors[UP   ], SEND_Z, cart_comm, &request_recv[2]);
   }
 
+  #pragma omp target update from(psimdata->pnew->ghostvals[RIGHT][0:10000])
+
+  for(int i=0; i<10000; i++){
+    if(psimdata->pnew->ghostvals[RIGHT][i] != 0){
+      printf("Got at index %5d value %6.3e\n")
+    }
+  }
 
   #pragma omp target teams distribute
   for (p = startp; p <= endp - 1; p++) {
