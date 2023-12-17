@@ -99,15 +99,19 @@ int main(int argc, char *argv[]) {
 
         switch (psimdata.params.outputs[i].source) {
           case PRESSURE:
+            #pragma omp target update from(simdata.pold[0:1])
             output_data = psimdata.pold;
             break;
           case VELOCITYX:
+            #pragma omp target update from(simdata.vxold[0:1])
             output_data = psimdata.vxold;
             break;
           case VELOCITYY:
+            #pragma omp target update from(simdata.vyold[0:1])
             output_data = psimdata.vyold;
             break;
           case VELOCITYZ:
+            #pragma omp target update from(simdata.vzold[0:1])
             output_data = psimdata.vzold;
             break;
 
@@ -684,19 +688,14 @@ int open_outputfile(output_t *output, process_grid_t *simgrid, grid_t* global_gr
   int m, n, p;
   closest_index(global_grid, output->posx, output->posy, output->posz, &m, &n, &p);
 
-  int mbar = m - simgrid->lm.start,
-    nbar = n - simgrid->ln.start,
-    pbar = p - simgrid->lp.start;
+  char buffer_filename[BUFSZ_LARGE];
+  snprintf(buffer_filename, BUFSZ_LARGE, "%d_%d_%d_%s", 
+    coords[0], coords[1], coords[2], output->filename);
 
   FILE *fp = NULL;
-  
-  if(mbar >= 0 && mbar < simgrid->lm.n &&
-    nbar >= 0 && nbar < simgrid->ln.n &&
-    pbar >= 0 && pbar < simgrid->lp.n){
-    if ((fp = create_datafile(grid, output->filename)) == NULL) {
-      DEBUG_PRINTF("Failed to open output file: '%s'", output->filename);
-      return 1;
-    }
+  if ((fp = create_datafile(grid, output->filename)) == NULL) {
+    DEBUG_PRINTF("Failed to open output file: '%s'", output->filename);
+    return 1;
   }
 
   output->grid = grid;
@@ -781,8 +780,8 @@ int read_outputparam(FILE *fp, output_t *output) {
     return 1;
   }
 
-  if (type != POINT){
-    DEBUG_PRINT("Limited functionality, only POINT output type accepted");
+  if (type != ALL){
+    DEBUG_PRINT("Limited functionality, only ALL output type accepted");
     return 1;
   }
 
