@@ -1081,9 +1081,9 @@ void update_pressure(process_simulation_data_t *psimdata) {
     }
   }
 
-  #pragma omp target update from(psimdata->buffer_vx[0:pnumnodesy*pnumnodesz])\
-      from(psimdata->buffer_vy[0:pnumnodesx*pnumnodesz]) \
-      from(psimdata->buffer_vz[0:pnumnodesx*pnumnodesy])
+  #pragma omp target update from(psimdata->buffer_vx[0:pnumnodesy*pnumnodesz])
+  #pragma omp target update from(psimdata->buffer_vy[0:pnumnodesx*pnumnodesz])
+  #pragma omp target update from(psimdata->buffer_vz[0:pnumnodesx*pnumnodesy])
 
   MPI_Isend(psimdata->buffer_vx, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[RIGHT], SEND_X, cart_comm, &request_send[0]);
   MPI_Isend(psimdata->buffer_vy, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[BACK ], SEND_Y, cart_comm, &request_send[1]);
@@ -1105,9 +1105,9 @@ void update_pressure(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUSES_IGNORE);
 
-  #pragma omp target update to(psimdata->vxold->ghostvals[LEFT ][0:pnumnodesy*pnumnodesz])\
-      to(psimdata->vyold->ghostvals[FRONT][0:pnumnodesx*pnumnodesz]) \
-      to(psimdata->vzold->ghostvals[DOWN ][0:pnumnodesx*pnumnodesy])
+  #pragma omp target update to(psimdata->vxold->ghostvals[LEFT ][0:pnumnodesy*pnumnodesz])
+  #pragma omp target update to(psimdata->vyold->ghostvals[FRONT][0:pnumnodesx*pnumnodesz])
+  #pragma omp target update to(psimdata->vzold->ghostvals[DOWN ][0:pnumnodesx*pnumnodesy])
 
   #pragma omp target teams distribute
   for (p = startp; p <= endp; p++) {
@@ -1205,9 +1205,9 @@ void update_velocities(process_simulation_data_t *psimdata) {
     }
   }
 
-  #pragma omp target update from(psimdata->buffer_px[0:pnumnodesy*pnumnodesz])\
-      from(psimdata->buffer_py[0:pnumnodesx*pnumnodesz]) \
-      from(psimdata->buffer_pz[0:pnumnodesx*pnumnodesy])
+  #pragma omp target update from(psimdata->buffer_px[0:pnumnodesy*pnumnodesz])
+  #pragma omp target update from(psimdata->buffer_py[0:pnumnodesx*pnumnodesz])
+  #pragma omp target update from(psimdata->buffer_pz[0:pnumnodesx*pnumnodesy])
 
   MPI_Isend(psimdata->buffer_px, pnumnodesy*pnumnodesz, MPI_DOUBLE, neighbors[LEFT ], SEND_X, cart_comm, &request_send[0]);
   MPI_Isend(psimdata->buffer_py, pnumnodesx*pnumnodesz, MPI_DOUBLE, neighbors[FRONT], SEND_Y, cart_comm, &request_send[1]);
@@ -1230,9 +1230,9 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  #pragma omp target update to(psimdata->pnew->ghostvals[RIGHT][0:pnumnodesy*pnumnodesz])\
-      to(psimdata->pnew->ghostvals[BACK ][0:pnumnodesx*pnumnodesz]) \
-      to(psimdata->pnew->ghostvals[UP   ][0:pnumnodesx*pnumnodesy])
+  #pragma omp target update to(psimdata->pnew->ghostvals[RIGHT][0:pnumnodesy*pnumnodesz])
+  #pragma omp target update to(psimdata->pnew->ghostvals[BACK ][0:pnumnodesx*pnumnodesz])
+  #pragma omp target update to(psimdata->pnew->ghostvals[UP   ][0:pnumnodesx*pnumnodesy])
 
   #pragma omp target teams distribute
   for (p = startp; p <= endp; p++) {
