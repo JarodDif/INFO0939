@@ -11,42 +11,42 @@ int coords[3];
 int neighbors[6];
 
 #pragma omp declare mapper(source_t source) \
-              map(to:source) \
-              map(to:source.data[0:source.numsamples])
+              map(source) \
+              map(source.data[0:source.numsamples])
 
 #pragma omp declare mapper(process_data_t data) \
-              map(to:data) \
-              map(   data.vals[0:PNUMNODESTOT(&data)])
+              map(data) \
+              map(data.vals[0:PNUMNODESTOT(&data)])
 
 #pragma omp declare mapper(process_simulation_data_t simdata) \
-              map(to:simdata) \
-              map(to:simdata.c[0:1]) map( to:simdata.rho[0:1]) map(simdata.rhohalf[0:1]) \
-              map(   simdata.pold[0:1]) map(simdata.pold->ghostvals[0:NEIGHBOR_TYPE_END]) \
-              map(   simdata.pold->ghostvals[RIGHT][0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.pold->ghostvals[BACK ][0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.pold->ghostvals[UP   ][0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
-              map(to:simdata.pnew[0:1]) map(simdata.pnew->ghostvals[0:NEIGHBOR_TYPE_END]) \
-              map(to:simdata.pnew->ghostvals[RIGHT][0:PNUMNODESY(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
-              map(to:simdata.pnew->ghostvals[BACK ][0:PNUMNODESX(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
-              map(to:simdata.pnew->ghostvals[UP   ][0:PNUMNODESX(simdata.pnew) * PNUMNODESY(simdata.pnew)]) \
-              map(   simdata.vxold[0:1]) map(simdata.vxold->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(   simdata.vxold->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxold) * PNUMNODESZ(simdata.vxold)]) \
-              map(to:simdata.vxnew[0:1]) map(simdata.vxnew->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(to:simdata.vxnew->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxnew) * PNUMNODESZ(simdata.vxnew)]) \
-              map(   simdata.vyold[0:1]) map(simdata.vyold->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(   simdata.vyold->ghostvals[FRONT][0:PNUMNODESX(simdata.vyold) * PNUMNODESZ(simdata.vyold)]) \
-              map(to:simdata.vynew[0:1]) map(simdata.vynew->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(to:simdata.vynew->ghostvals[FRONT][0:PNUMNODESX(simdata.vynew) * PNUMNODESZ(simdata.vynew)]) \
-              map(   simdata.vzold[0:1]) map(simdata.vzold->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(   simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
-              map(to:simdata.vznew[0:1]) map(simdata.vznew->ghostvals[0:NEIGHBOR_TYPE_END])\
-              map(to:simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
-              map(   simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
-              map(   simdata.buffer_vz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
-              map(   simdata.buffer_pz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
+              map(simdata) \
+              map(simdata.c[0:1]) map(simdata.rho[0:1]) map(simdata.rhohalf[0:1]) \
+              map(simdata.pold[0:1]) map(simdata.pold->ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(simdata.pold->ghostvals[RIGHT][0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.pold->ghostvals[BACK ][0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.pold->ghostvals[UP   ][0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(simdata.pnew[0:1]) map(simdata.pnew->ghostvals[0:NEIGHBOR_TYPE_END]) \
+              map(simdata.pnew->ghostvals[RIGHT][0:PNUMNODESY(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(simdata.pnew->ghostvals[BACK ][0:PNUMNODESX(simdata.pnew) * PNUMNODESZ(simdata.pnew)]) \
+              map(simdata.pnew->ghostvals[UP   ][0:PNUMNODESX(simdata.pnew) * PNUMNODESY(simdata.pnew)]) \
+              map(simdata.vxold[0:1]) map(simdata.vxold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vxold->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxold) * PNUMNODESZ(simdata.vxold)]) \
+              map(simdata.vxnew[0:1]) map(simdata.vxnew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vxnew->ghostvals[LEFT ][0:PNUMNODESY(simdata.vxnew) * PNUMNODESZ(simdata.vxnew)]) \
+              map(simdata.vyold[0:1]) map(simdata.vyold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vyold->ghostvals[FRONT][0:PNUMNODESX(simdata.vyold) * PNUMNODESZ(simdata.vyold)]) \
+              map(simdata.vynew[0:1]) map(simdata.vynew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vynew->ghostvals[FRONT][0:PNUMNODESX(simdata.vynew) * PNUMNODESZ(simdata.vynew)]) \
+              map(simdata.vzold[0:1]) map(simdata.vzold->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vzold->ghostvals[DOWN ][0:PNUMNODESX(simdata.vzold) * PNUMNODESY(simdata.vzold)]) \
+              map(simdata.vznew[0:1]) map(simdata.vznew->ghostvals[0:NEIGHBOR_TYPE_END])\
+              map(simdata.vznew->ghostvals[DOWN ][0:PNUMNODESX(simdata.vznew) * PNUMNODESY(simdata.vznew)]) \
+              map(simdata.buffer_vx[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.buffer_px[0:PNUMNODESY(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.buffer_vy[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.buffer_py[0:PNUMNODESX(simdata.pold) * PNUMNODESZ(simdata.pold)]) \
+              map(simdata.buffer_vz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)]) \
+              map(simdata.buffer_pz[0:PNUMNODESX(simdata.pold) * PNUMNODESY(simdata.pold)])
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
