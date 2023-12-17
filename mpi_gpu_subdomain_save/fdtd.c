@@ -99,19 +99,19 @@ int main(int argc, char *argv[]) {
 
         switch (psimdata.params.outputs[i].source) {
           case PRESSURE:
-            #pragma omp target update from(simdata.pold[0:1])
+            #pragma omp target update from(psimdata.pold[0:1])
             output_data = psimdata.pold;
             break;
           case VELOCITYX:
-            #pragma omp target update from(simdata.vxold[0:1])
+            #pragma omp target update from(psimdata.vxold[0:1])
             output_data = psimdata.vxold;
             break;
           case VELOCITYY:
-            #pragma omp target update from(simdata.vyold[0:1])
+            #pragma omp target update from(psimdata.vyold[0:1])
             output_data = psimdata.vyold;
             break;
           case VELOCITYZ:
-            #pragma omp target update from(simdata.vzold[0:1])
+            #pragma omp target update from(psimdata.vzold[0:1])
             output_data = psimdata.vzold;
             break;
 
