@@ -1229,7 +1229,7 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   for(int i=0; i<10000; i++){
     if(psimdata->pnew->ghostvals[RIGHT][i] != 0){
-      printf("Got at index %5d value %6.3e\n");
+      printf("Got at index %5d value %6.3e\n", index, psimdata->pnew->ghostvals[RIGHT][i]);
     }
   }
 
