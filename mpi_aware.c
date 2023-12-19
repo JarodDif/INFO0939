@@ -14,7 +14,7 @@ typedef struct _data{
               map(data) \
               map(data.vals[0:data.N]) \
               map(data.neighbors[0:1]) \
-              map(data.neighbors[0:data.N])
+              map(data.neighbors[0][0:data.N])
 
 int main(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
