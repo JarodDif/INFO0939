@@ -32,8 +32,8 @@ int main(int argc, char *argv[]){
 
     data_t test;
     test.N = 10;
-    if((test.vals = malloc(sizeof(double) * test.N)) == NULL &&
-        (test.neighbors = malloc(sizeof(double*) * 6)) == NULL  &&
+    if((test.vals = malloc(sizeof(double) * test.N)) == NULL ||
+        (test.neighbors = malloc(sizeof(double*) * 6)) == NULL  ||
         (test.neighbors[0] = malloc(sizeof(double) * test.N)) == NULL){
         MPI_Abort(MPI_COMM_WORLD,MPI_ERR_IO);
     }
