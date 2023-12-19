@@ -16,6 +16,26 @@ typedef struct _data{
               map(data.neighbors[0:1]) \
               map(data.neighbors[0][0:data.N])
 
+void doTransfer(data_t *test){
+
+    #pragma omp target data map(tofrom:test[0:1])
+    {
+        double *ptr_to_vals = test->vals;
+        double *ptr_to_n = test->neighbors[0];
+        #pragma omp target data use_device_ptr(ptr_to_vals, ptr_to_n)
+        {
+            if(rank == 0){
+                MPI_Send(ptr_to_vals, test->N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
+                MPI_Send(ptr_to_n, test->N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
+            }else{
+                MPI_Recv(ptr_to_vals, test->N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
+                MPI_Recv(ptr_to_n, test->N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
+            }
+        }
+    }
+
+}
+
 int main(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
 
@@ -38,32 +58,18 @@ int main(int argc, char *argv[]){
         MPI_Abort(MPI_COMM_WORLD,MPI_ERR_IO);
     }
 
-    printf("%d : malloced", rank);
+    printf("%d : malloced\n", rank);
 
     for(int i=0; i < test.N; i++){
         test.vals[i] = (rank == 0)?2*i:0;
         test.neighbors[0][i] = (rank == 0)?2*i:0;
     }
 
-    printf("%d : filled data", rank);
+    printf("%d : filled data \n", rank);
 
-    #pragma omp target data map(tofrom:test)
-    {
-        double *ptr_to_vals = test.vals;
-        double *ptr_to_n = test.neighbors[0];
-        #pragma omp target data use_device_ptr(ptr_to_vals, ptr_to_n)
-        {
-            if(rank == 0){
-                MPI_Send(ptr_to_vals, test.N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
-                MPI_Send(ptr_to_n, test.N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
-            }else{
-                MPI_Recv(ptr_to_vals, test.N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
-                MPI_Recv(ptr_to_n, test.N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
-            }
-        }
-    }
+    doTransfer(&test);    
 
-    printf("%d : Finished transfer", rank);
+    printf("%d : Finished transfer\n", rank);
 
     if(rank == 1){
         for(int i=0; i < test.N; i++){
