@@ -16,7 +16,7 @@ typedef struct _data{
               map(data.neighbors[0:1]) \
               map(data.neighbors[0][0:data.N])
 
-void doTransfer(data_t *test){
+void doTransfer(data_t *test, int rank){
 
     #pragma omp target data map(tofrom:test[0:1])
     {
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 
     printf("%d : filled data \n", rank);
 
-    doTransfer(&test);    
+    doTransfer(&test, rank);    
 
     printf("%d : Finished transfer\n", rank);
 
