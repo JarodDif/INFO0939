@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
             if(rank == 0){
                 MPI_Send(ptr_to_vals, test.N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
             }else{
-                MPI_Recv(ptr_to_vals, test.N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, null);
+                MPI_Recv(ptr_to_vals, test.N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
             }
         }
     }
