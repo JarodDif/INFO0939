@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
         test.vals[i] = (rank == 0)?2*i:0;
     }
 
-    #pragma omp target enter data map(tofrom:test)
+    #pragma omp target data map(tofrom:test)
     {
         double *ptr_to_vals = test.vals;
         #pragma omp target datause_device_ptr(ptr_to_vals)
