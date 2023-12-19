@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if(world_size != 2){
-        if(rank == 0){printf("Need exactly two processes\n")}
+        if(rank == 0){printf("Need exactly two processes\n");}
         MPI_Finalize();
         return 1;
     }
