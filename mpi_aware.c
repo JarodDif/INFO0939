@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
     #pragma omp target data map(tofrom:test)
     {
         double *ptr_to_vals = test.vals;
-        #pragma omp target datause_device_ptr(ptr_to_vals)
+        #pragma omp target data use_device_ptr(ptr_to_vals)
         {
             if(rank == 0){
                 MPI_Send(ptr_to_vals, test.N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
