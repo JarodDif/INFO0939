@@ -37,9 +37,11 @@ int main(int argc, char *argv[]){
         test.vals[i] = (rank == 0)?2*i:0;
     }
 
-    #pragma omp target enter data map(tofrom:test){
+    #pragma omp target enter data map(tofrom:test)
+    {
         double *ptr_to_vals = test.vals;
-        #pragma omp target datause_device_ptr(ptr_to_vals){
+        #pragma omp target datause_device_ptr(ptr_to_vals)
+        {
             if(rank == 0){
                 MPI_Send(ptr_to_vals, test.N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
             }else{
