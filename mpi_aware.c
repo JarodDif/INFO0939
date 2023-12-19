@@ -51,10 +51,13 @@ int main(int argc, char *argv[]){
     if(rank == 1){
         for(int i=0; i < test.N; i++){
             printf("%6.3lf ", test.vals[i]);
-        }printf("\n");
+        }
+        printf("\n");
     }
 
     free(test.vals);
 
-    return 0
+    MPI_Finalize();
+
+    return 0;
 }
