@@ -18,19 +18,16 @@ typedef struct _data{
 
 void doTransfer(data_t *test, int rank){
 
-    #pragma omp target data map(tofrom:test[0:1])
+    double *ptr_to_vals = test->vals;
+    double *ptr_to_n = test->neighbors[0];
+    #pragma omp target data use_device_ptr(ptr_to_vals, ptr_to_n)
     {
-        double *ptr_to_vals = test->vals;
-        double *ptr_to_n = test->neighbors[0];
-        #pragma omp target data use_device_ptr(ptr_to_vals, ptr_to_n)
-        {
-            if(rank == 0){
-                MPI_Send(ptr_to_vals, test->N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
-                MPI_Send(ptr_to_n, test->N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
-            }else{
-                MPI_Recv(ptr_to_vals, test->N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
-                MPI_Recv(ptr_to_n, test->N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
-            }
+        if(rank == 0){
+            MPI_Send(ptr_to_vals, test->N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
+            MPI_Send(ptr_to_n, test->N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
+        }else{
+            MPI_Recv(ptr_to_vals, test->N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
+            MPI_Recv(ptr_to_n, test->N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
         }
     }
 
@@ -67,7 +64,10 @@ int main(int argc, char *argv[]){
 
     printf("%d : filled data \n", rank);
 
-    doTransfer(&test, rank);    
+    #pragma omp target data map(tofrom:test)
+    {
+        doTransfer(&test, rank); 
+    }  
 
     printf("%d : Finished transfer\n", rank);
 
