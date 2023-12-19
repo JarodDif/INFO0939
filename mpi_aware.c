@@ -38,10 +38,14 @@ int main(int argc, char *argv[]){
         MPI_Abort(MPI_COMM_WORLD,MPI_ERR_IO);
     }
 
+    printf("%d : malloced", rank);
+
     for(int i=0; i < test.N; i++){
         test.vals[i] = (rank == 0)?2*i:0;
         test.neighbors[0][i] = (rank == 0)?2*i:0;
     }
+
+    printf("%d : filled data", rank);
 
     #pragma omp target data map(tofrom:test)
     {
@@ -58,6 +62,8 @@ int main(int argc, char *argv[]){
             }
         }
     }
+
+    printf("%d : Finished transfer", rank);
 
     if(rank == 1){
         for(int i=0; i < test.N; i++){
