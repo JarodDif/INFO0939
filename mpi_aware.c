@@ -10,24 +10,32 @@ typedef struct _data{
     double **neighbors;
 }data_t;
 
+typedef struct _sim{
+    data_t *data;
+}sim_t;
+
 #pragma omp declare mapper(data_t data) \
               map(data) \
               map(data.vals[0:data.N]) \
               map(data.neighbors[0:1]) \
               map(data.neighbors[0][0:data.N])
 
-void doTransfer(data_t *test, int rank){
+#pragma omp declare mapper(sim_t sim) \
+            map(sim) \
+            map(sim.data[0:1])
 
-    double *ptr_to_vals = test->vals;
-    double *ptr_to_n = test->neighbors[0];
+void doTransfer(sim_t *sim, int rank){
+
+    double *ptr_to_vals = sim->data->vals;
+    double *ptr_to_n = sim->data->neighbors[0];
     #pragma omp target data use_device_ptr(ptr_to_vals, ptr_to_n)
     {
         if(rank == 0){
-            MPI_Send(ptr_to_vals, test->N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
-            MPI_Send(ptr_to_n, test->N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
+            MPI_Send(ptr_to_vals, sim->data->N, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
+            MPI_Send(ptr_to_n, sim->data->N, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
         }else{
-            MPI_Recv(ptr_to_vals, test->N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
-            MPI_Recv(ptr_to_n, test->N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
+            MPI_Recv(ptr_to_vals, sim->data->N, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, NULL);
+            MPI_Recv(ptr_to_n, sim->data->N, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, NULL);
         }
     }
 
@@ -48,6 +56,8 @@ int main(int argc, char *argv[]){
     }
 
     data_t test;
+    sim_t sim;
+    sim.data = &test;
     test.N = 10;
     if((test.vals = malloc(sizeof(double) * test.N)) == NULL ||
         (test.neighbors = malloc(sizeof(double*) * 6)) == NULL  ||
@@ -64,9 +74,9 @@ int main(int argc, char *argv[]){
 
     printf("%d : filled data \n", rank);
 
-    #pragma omp target data map(tofrom:test)
+    #pragma omp target data map(tofrom:sim)
     {
-        doTransfer(&test, rank); 
+        doTransfer(&sim, rank); 
     }  
 
     printf("%d : Finished transfer\n", rank);
