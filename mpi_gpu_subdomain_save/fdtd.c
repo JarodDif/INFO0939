@@ -1237,17 +1237,6 @@ void update_velocities(process_simulation_data_t *psimdata) {
 
   MPI_Waitall(3, request_recv, MPI_STATUS_IGNORE);
 
-  if(cart_rank == 0){
-    #pragma omp target update from(psimdata->pnew->ghostvals[RIGHT][0:10000])
-
-    for(int i=0; i<10000; i++){
-      if(psimdata->pnew->ghostvals[RIGHT][i] != 0){
-        printf("Got at index %5d value %6.3e\n", i, psimdata->pnew->ghostvals[RIGHT][i]);
-        break;
-      }
-    }
-  }
-
   #pragma omp target teams distribute
   for (p = startp; p <= endp; p++) {
     #pragma omp parallel for
