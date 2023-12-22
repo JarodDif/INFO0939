@@ -5,4 +5,4 @@
 in_c_r7.dat
 in_rho_3d.dat
 sine 3400 0.5 0.2 0.2
-point pressure out_p_point_0_50_0_50_0_20.dat 0.50 0.50 0.20
+all pressure out_p.dat
