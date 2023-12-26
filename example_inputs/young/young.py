@@ -29,21 +29,11 @@ def write_data(f, vals):
                 write_double(f, vals[m,n,p])
 
 vals = np.full(dims, 340)
-vals[:, :, dims[2]//4]  = 0
-vals[45, :, dims[2]//4] = 340
-vals[55, :, dims[2]//4] = 340
+vals[:    , :, int(dims[2] * 0.4)] = 0
+vals[44:46, :, int(dims[2] * 0.4)] = 340
+vals[54:56, :, int(dims[2] * 0.4)] = 340
 
 with open("./in_c_young_abs.dat", "wb") as f:
-    write_dims(f,dims)
-    write_lims(f,lims)
-    write_data(f,vals)
-    
-vals = np.full(dims, 340)
-vals[:, :, dims[2]//4-1:dims[2]//4+5]  = -340       # Tried to implement reflection but does not work
-vals[45, :, dims[2]//4-1:dims[2]//4+5] = 340
-vals[55, :, dims[2]//4-1:dims[2]//4+5] = 340
-
-with open("./in_c_young_ref.dat", "wb") as f:
     write_dims(f,dims)
     write_lims(f,lims)
     write_data(f,vals)
