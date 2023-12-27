@@ -3,7 +3,7 @@
 #SBATCH --output="run_gpu.out"
 #SBATCH --partition=gpu
 #SBATCH --ntasks=1
-#SBATCH --mem=40G
+#SBATCH --mem=20G
 #SBATCH --gpus=1
 #SBATCH --time=15:00
 #SBATCH --account=ulghpsc
