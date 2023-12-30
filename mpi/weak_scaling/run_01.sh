@@ -4,7 +4,8 @@
 #SBATCH --ntasks=1
 #SBATCH --time=00:20:00 # hh:mm:ss
 #SBATCH --mem-per-cpu=10240
-#SBATCH --partition=batch
+#SBATCH --partition=hmem
+#SBATCH --exclusive
 
 module load OpenMPI
 
