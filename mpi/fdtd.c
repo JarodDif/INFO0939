@@ -1341,11 +1341,9 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
     MPI_Abort(cart_comm, MPI_ERR_NO_MEM);
   }
 
-  /*
   DEBUG_PRINTF("Rank %4d has subdomain (%3d, %3d) (%3d, %3d) (%3d, %3d) of global grid (%3d, %3d, %3d)\n\tcvalue %10.5lf at (%3d, %3d, %3d)\n",
     cart_rank, psim_grid.lm.start, psim_grid.lm.end, psim_grid.ln.start, psim_grid.ln.end, psim_grid.lp.start, psim_grid.lp.end,
     psim_grid.gnumx, psim_grid.gnumy, psim_grid.gnumz, psimdata->c->vals[0], psim_grid.lm.start, psim_grid.ln.start, psim_grid.lp.start);
-  */
 
   if (cart_rank == 0){
     if (psimdata->params.outrate > 0 && psimdata->params.outputs != NULL) {
