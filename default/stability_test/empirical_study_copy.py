@@ -3,33 +3,33 @@ import struct
 import numpy as np
 
 
-h       = 10e-3
+h       = 7.5e-3
 c       = 340
 s_lim   = 3**(-1/2)
 dt_lim  = s_lim * h / c
 out_file = "empirical_study_"+str(h).replace(".", "_")
 
 rms_tab = []
-dt_tab  = np.array([*np.geomspace(dt_lim/1000, dt_lim/100, 2), *np.geomspace(dt_lim/10, dt_lim*10, 200)])
+dt_tab  = [dt_lim] #np.array([*np.geomspace(dt_lim/1000, dt_lim/100, 2), *np.geomspace(dt_lim/10, dt_lim*10, 25)])
 
 
 with open("param_3d.txt", "r") as f:
     lines = f.readlines()
 
-lines[0] = f"{h:.2e}\n"
+lines[0] = str(h) + "\n"
 
 with open("param_3d.txt", "w") as f:
     f.writelines(lines)
 
 
-for dt in dt_tab:
+for i, dt in zip(range(len(dt_tab)), dt_tab):
 
     with open("param_3d.txt", "r") as f:
         lines = f.readlines()
-        
-    lines[1] = f"{dt:.2e}\n"
-    lines[2] = f"{500*dt:.2e}\n"
-    lines[3] = "450\n"
+
+    lines[1] = str(dt)          + "\n"
+    lines[2] = str(500 * dt)    + "\n"
+    lines[3] = str(200)         + "\n"
 
     with open("param_3d.txt", "w") as f:
         f.writelines(lines)
@@ -59,10 +59,9 @@ for dt in dt_tab:
         zmin = read_double(f)
         zmax = read_double(f)
         
-        vals  = np.empty((nx, ny, nz))
-            
         while True:
             
+            vals  = np.empty((nx, ny, nz))
             try:
                 index = read_int(f)
                 time  = read_double(f)
@@ -75,7 +74,7 @@ for dt in dt_tab:
                 print(vals)
                 rms_val = np.sqrt(np.sum(vals**2))/np.prod(vals.shape)
                 rms_tab.append(rms_val)
-                print(f"{dt = } and {dt_lim = }\t: {rms_val = }")
+                print(f"{dt = }\t: {rms_val = }")
                 break
             
         if rms_tab[-1] > 1e3 :
