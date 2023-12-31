@@ -186,9 +186,6 @@ int main(int argc, char *argv[]) {
     free(output_reordered->vals); free(output_reordered);
   }
 
-  printf("freed boundaries \n");
-  fflush(stdout);
-
   finalize_simulation(&psimdata);
 
   MPI_Finalize();
@@ -1455,27 +1452,13 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
     free(psimdata->params.outputs);
   }
 
-  printf("freed outputs \n");
-  fflush(stdout);
-
   free(psimdata->params.source.data);
   free(psimdata->params.cin_filename);
-  free(psimdata->params.rhoin_filename);
-  printf("freed sources \n");
-  fflush(stdout);
+  free(psimdata->params.rhoin_filename);;
 
   free_pdata(psimdata->rho);
-  printf("freed rho \n");
-  fflush(stdout);
   free_pdata(psimdata->rhohalf);
-  printf("freed rhohalf \n");
-  fflush(stdout);
   free_pdata(psimdata->c);
-  printf("freed c \n");
-  fflush(stdout);
-
-  printf("freed input maps \n");
-  fflush(stdout);
 
   free_pdata(psimdata->pold);
   free_pdata(psimdata->pnew);
@@ -1486,18 +1469,12 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
   free_pdata(psimdata->vynew);
   free_pdata(psimdata->vznew);
 
-  printf("freed data \n");
-  fflush(stdout);
-
   free(psimdata->buffer_vx);
   free(psimdata->buffer_vy);
   free(psimdata->buffer_vz);
   free(psimdata->buffer_px);
   free(psimdata->buffer_py);
   free(psimdata->buffer_pz);
-
-  printf("freed buffers \n");
-  fflush(stdout);
 }
 
 void swap_timesteps(process_simulation_data_t *psimdata) {
