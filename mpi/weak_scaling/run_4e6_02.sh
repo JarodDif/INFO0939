@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name="ws_02"
-#SBATCH --output="run_1e6_02.out"
+#SBATCH --output="run_4e6_02.out"
 #SBATCH --ntasks=2
 #SBATCH --time=00:20:00 # hh:mm:ss
 #SBATCH --mem-per-cpu=10240
