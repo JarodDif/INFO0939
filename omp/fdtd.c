@@ -1005,7 +1005,7 @@ void init_simulation(simulation_data_t *simdata, const char *params_filename) {
   fill_data(simdata->pold, 0.0);
   fill_data(simdata->pnew, 0.0);
 
-  fill_data(simdata->vynew, 0.0);
+  fill_data(simdata->vxnew, 0.0);
   fill_data(simdata->vxold, 0.0);
   fill_data(simdata->vynew, 0.0);
   fill_data(simdata->vyold, 0.0);

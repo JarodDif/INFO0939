@@ -1453,12 +1453,12 @@ void init_simulation(process_simulation_data_t *psimdata, const char *params_fil
   fill_data(psimdata->pold, 0.0);
   fill_data(psimdata->pnew, 0.0);
 
-  fill_data(psimdata->vynew, 0.0);
   fill_data(psimdata->vxold, 0.0);
-  fill_data(psimdata->vynew, 0.0);
+  fill_data(psimdata->vxnew, 0.0);
   fill_data(psimdata->vyold, 0.0);
-  fill_data(psimdata->vznew, 0.0);
+  fill_data(psimdata->vynew, 0.0);
   fill_data(psimdata->vzold, 0.0);
+  fill_data(psimdata->vznew, 0.0);
 
   for(int i=0; i < PNUMNODESY(psimdata->pnew)*PNUMNODESZ(psimdata->pnew); i++){
     psimdata->pnew->ghostvals[RIGHT][i] = 0;
