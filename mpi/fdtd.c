@@ -172,6 +172,7 @@ int main(int argc, char *argv[]) {
         (double)NUMNODESTOT(psimdata.global_grid) * (numtimesteps + 1);
     double updatespers = numupdates / elapsed / 1e6;
     printf("\nElapsed %.6lf seconds (%.3lf Mupdates/s)\n\n", elapsed, updatespers);
+    fflush(stdout);
   }
 
   if(cart_rank == 0){
@@ -184,6 +185,9 @@ int main(int argc, char *argv[]) {
     free(receive_data_buffer);
     free(output_reordered->vals); free(output_reordered);
   }
+
+  printf("freed boundaries \n");
+  fflush(stdout);
 
   finalize_simulation(&psimdata);
 
