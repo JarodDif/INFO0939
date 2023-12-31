@@ -1459,8 +1459,14 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
   fflush(stdout);
 
   free_pdata(psimdata->rho);
+  printf("freed rho \n");
+  fflush(stdout);
   free_pdata(psimdata->rhohalf);
+  printf("freed rhohalf \n");
+  fflush(stdout);
   free_pdata(psimdata->c);
+  printf("freed c \n");
+  fflush(stdout);
 
   printf("freed input maps \n");
   fflush(stdout);
