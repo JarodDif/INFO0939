@@ -462,12 +462,18 @@ void free_pdata(process_data_t *pdata){
   if(pdata == NULL) return;
 
   for(int i = 0; i < NEIGHBOR_TYPE_END; ++i){
+    printf("try free ghostval %d\n", i);
+    fflush(stdout);
     if (pdata->malloc_ghost_flags & (1 << i)) {
       free(pdata->ghostvals[i]);
     }
   }
   free(pdata->ghostvals);
+  printf("freed ghostvals \n");
+  fflush(stdout);
   free(pdata->vals);
+  printf("freed vals \n");
+  fflush(stdout);
   free(pdata);
 }
 
