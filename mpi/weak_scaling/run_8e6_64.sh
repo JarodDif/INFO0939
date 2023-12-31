@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name="ws_64"
-#SBATCH --output="run_4e6_64.out"
+#SBATCH --output="run_8e6_64.out"
 #SBATCH --ntasks=64
 #SBATCH --time=00:20:00 # hh:mm:ss
 #SBATCH --mem-per-cpu=10240
@@ -9,4 +9,4 @@
 
 module load OpenMPI
 
-srun ../fdtd param_3d_800_800_400.txt
+srun ../fdtd param_3d_800_800_800.txt
