@@ -1021,6 +1021,7 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
       (psimdata->rho = allocate_pdata(psimgrid, 0)) == NULL ||
       (psimdata->rhohalf = allocate_pdata(psimgrid, 0)) == NULL) {
     DEBUG_PRINT("Failed to allocate memory");
+    printf("Failed to allocate input pdata\n");
     return 1;
   }
 
@@ -1462,7 +1463,6 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
   free(psimdata->params.source.data);
   free(psimdata->params.cin_filename);
   free(psimdata->params.rhoin_filename);
-
   printf("freed sources \n");
   fflush(stdout);
 
