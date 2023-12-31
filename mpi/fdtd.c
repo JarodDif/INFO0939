@@ -1448,13 +1448,22 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
     free(psimdata->params.outputs);
   }
 
+  printf("freed outputs \n");
+  fflush(stdout);
+
   free(psimdata->params.source.data);
   free(psimdata->params.cin_filename);
   free(psimdata->params.rhoin_filename);
 
+  printf("freed sources \n");
+  fflush(stdout);
+
   free_pdata(psimdata->rho);
   free_pdata(psimdata->rhohalf);
   free_pdata(psimdata->c);
+
+  printf("freed input maps \n");
+  fflush(stdout);
 
   free_pdata(psimdata->pold);
   free_pdata(psimdata->pnew);
@@ -1465,12 +1474,18 @@ void finalize_simulation(process_simulation_data_t *psimdata) {
   free_pdata(psimdata->vynew);
   free_pdata(psimdata->vznew);
 
+  printf("freed data \n");
+  fflush(stdout);
+
   free(psimdata->buffer_vx);
   free(psimdata->buffer_vy);
   free(psimdata->buffer_vz);
   free(psimdata->buffer_px);
   free(psimdata->buffer_py);
   free(psimdata->buffer_pz);
+
+  printf("freed buffers \n");
+  fflush(stdout);
 }
 
 void swap_timesteps(process_simulation_data_t *psimdata) {
