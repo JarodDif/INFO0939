@@ -58,6 +58,8 @@ The values of $P_x, P_y, P_z$ are computed by `MPI_Dims_Create` and will create 
 With this we mean that if one were to chose a prime number (e.g. $5$), the code will separate the domain into $5$ domains only along one axis ($P_x = 5, P_y = P_z = 1$). 
 But given a number with multiple prime factors (e.g. $8$), the code will separate the domain into $8$ domains, but always $2$ along each axis ($P_x = P_y = P_z = 2$).
 
+This supposes that the domain is not to asymmetric, which is most of our cases. One could exhaustively find the best $P_x, P_y, P_z$ (which minimizes $T/p * (P_x/N_x + P_y/N_y + P_z/N_z)$) by exhaustive search.
+
 ## Q6 : OpenMP version
 
 The folder `omp` contains our MPI implementation of the code.
@@ -68,22 +70,23 @@ After a small amount of tests using different values for the `collapse` clause, 
 
 The folder `mpi_omp` contains our hybrid implementation
 
-## Q8 : Scalability analysis
+## Q8 : Performance measures and scalability analysis
 
-Multiple slurm jobs have been created to generate reports for the different types of analysis on different cases
+Multiple slurm jobs have been created to generate reports for the different types of analysis on different cases.
+
+For scalability in the folder `mpi` you have scripts and data relevant to the strong and weak scalability
 
 ## Q9 : Single GPU acceleration 
 
 The folder `gpu` contains our GPU accelerated version
 
 This version performs significantly better than the OpenMP CPU version, even with $16$ processes.
-A more complete comparision will be done in the final report.
 
 ## Q10 : Custom situations
 
-Currently we have created a speed input map that simulates the R7 classroom. We use this input map to simulate a teacher emitting a high frequency sound from the front of the classroom.
+We have created a speed input map that simulates the R7 classroom. We use this input map to simulate a teacher emitting a high frequency sound from the front of the classroom.
 
-We will try to run the program on an audio source once the other points are done.
+We also created a simulation of Young's double slit experiment and we clearly see the creation of Huygens' wavelets
 
 ## Optional enhancements
 
@@ -97,5 +100,6 @@ We do not intend to do this point
 
 ### 3 chilis : Multi-GPU version
 
-We do intend to write a multi-GPU version of the code. 
-Currently the code inside `mpi_gpu_single_point` is very slow and is aimed to output only the value at one point.
+We have two code versions that are prefixed by `mpi_gpu`.
+1. One naive version that does not use `use_device_ptr`
+1. A better version that uses `use_device_ptr` and therefore is faster for inter-GPU communication
