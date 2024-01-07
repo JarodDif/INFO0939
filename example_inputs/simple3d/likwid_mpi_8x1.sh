@@ -13,7 +13,6 @@ module load OpenMPI
 
 export OMP_PROC_BIND=true
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-
 export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
 
 likwid-mpirun --mpi slurm -np ${SLURM_NTASKS} -g CACHE ../../mpi/fdtd param_3d.txt
