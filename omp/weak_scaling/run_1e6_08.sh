@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name="ws_08"
 #SBATCH --output="run_1e6_08.out"
-#SBATCH --ntasks=4
-#SBATCH --cpus-per-task=2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
 #SBATCH --time=00:20:00 # hh:mm:ss
-#SBATCH --mem-per-cpu=10240
+#SBATCH --mem-per-cpu=81920
 #SBATCH --partition=hmem
 #SBATCH --exclusive
 

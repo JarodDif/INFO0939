@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name="ws_32"
 #SBATCH --output="run_8e6_32.out"
-#SBATCH --ntasks=8
-#SBATCH --cpus-per-task=4
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
 #SBATCH --time=00:20:00 # hh:mm:ss
-#SBATCH --mem-per-cpu=10240
+#SBATCH --mem-per-cpu=327680
 #SBATCH --partition=hmem
 #SBATCH --exclusive
 
