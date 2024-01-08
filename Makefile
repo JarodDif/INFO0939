@@ -102,4 +102,4 @@ endif
 
 # removes the build programs
 clean:
-	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_OMP) $(OUT_HYBRID) $(OUT_GPU) $(OUT_MGPU)
+	rm -f $(OUT_DEFAULT) $(OUT_MPI) $(OUT_MPI_SCOREP) $(OUT_OMP) $(OUT_OMP_SCOREP) $(OUT_HYBRID) $(OUT_HYBRID_SCOREP) $(OUT_GPU) $(OUT_MGPU)
