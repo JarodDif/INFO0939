@@ -3,6 +3,7 @@
 CC = gcc
 MPICC = mpicc
 CCLANG = clang
+SCOREP = scorep
 CFLAGS = -O3 -DNDEBUG
 LDFLAGS = -lm
 LDFLAGS_OMP = -lm -fopenmp
@@ -13,12 +14,15 @@ OUT_DEFAULT = default/fdtd
 SRC_MPI = mpi/fdtd.c
 HDR_MPI = mpi/fdtd.h
 OUT_MPI = mpi/fdtd
+OUT_MPI_SCOREP = mpi/fdtd_instr
 SRC_OMP = omp/fdtd.c
 HDR_OMP = omp/fdtd.h
 OUT_OMP = omp/fdtd
+OUT_OMP_SCOREP = omp/fdtd_instr
 SRC_HYBRID = mpi_omp/fdtd.c
 HDR_HYBRID = mpi_omp/fdtd.h
 OUT_HYBRID = mpi_omp/fdtd
+OUT_HYBRID_SCOREP = mpi_omp/fdtd_instr
 SRC_GPU = gpu/fdtd.c
 HDR_GPU = gpu/fdtd.h
 OUT_GPU = gpu/fdtd
@@ -32,8 +36,11 @@ PARAM_FILE = param_3d.txt
 
 default: $(OUT_DEFAULT)
 mpi: $(OUT_MPI)
+mpi_scorep: $(OUT_MPI_SCOREP)
 omp: $(OUT_OMP)
-hybrid: $(OUT_HYBRID) 
+omp_scorep: $(OUT_OMP_SCOREP)
+hybrid: $(OUT_HYBRID)
+hybrid_scorep: $(OUT_HYBRID_SCOREP)
 gpu: $(OUT_GPU)
 mgpu: $(OUT_MGPU)
 
@@ -43,11 +50,20 @@ $(OUT_DEFAULT): $(SRC_DEFAULT) $(HDR_DEFAULT)
 $(OUT_MPI): $(SRC_MPI) $(HDR_MPI)
 	$(MPICC) $(CFLAGS) -o $(OUT_MPI) $(SRC_MPI) $(LDFLAGS)
 
+$(OUT_MPI_SCOREP): $(SRC_MPI) $(HDR_MPI)
+	$(SCOREP) $(MPICC) $(CFLAGS) -o $(OUT_MPI) $(SRC_MPI) $(LDFLAGS)
+
 $(OUT_OMP) : $(SRC_OMP) $(HDR_OMP)
 	$(CC) $(CFLAGS) -o $(OUT_OMP) $(SRC_OMP) $(LDFLAGS_OMP)
 
+$(OUT_OMP_SCOREP) : $(SRC_OMP) $(HDR_OMP)
+	$(SCOREP) $(CC) $(CFLAGS) -o $(OUT_OMP) $(SRC_OMP) $(LDFLAGS_OMP)
+
 $(OUT_HYBRID): $(SRC_HYBRID) $(HDR_HYBRID)
 	$(MPICC) $(CFLAGS) -o $(OUT_HYBRID) $(SRC_HYBRID) $(LDFLAGS_OMP)
+
+$(OUT_HYBRID_SCOREP): $(SRC_HYBRID) $(HDR_HYBRID)
+	$(SCOREP) $(MPICC) $(CFLAGS) -o $(OUT_HYBRID) $(SRC_HYBRID) $(LDFLAGS_OMP)
 
 $(OUT_GPU) : $(SRC_GPU) $(HDR_GPU)
 	$(CCLANG) $(CFLAGS) -o $(OUT_GPU) $(SRC_GPU) $(LDFLAGS_GPU)
