@@ -15,4 +15,4 @@ export OMP_PROC_BIND=true
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
 
-scalasca -analyze -q -t -f scorep.filter srun ../../omp/fdtd param_3d.txt
+scalasca -analyze -q -t -f scorep.filter srun ../../omp/fdtd_instr param_3d.txt
