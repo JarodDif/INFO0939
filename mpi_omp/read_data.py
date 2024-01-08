@@ -7,6 +7,7 @@ data_ss_111 = pd.read_csv('./strong_scaling/data_111.csv')
 data_ss_222 = pd.read_csv('./strong_scaling/data_222.csv')
 data_ws_1e6 = pd.read_csv('./weak_scaling/data_1e6.csv')
 data_ws_8e6 = pd.read_csv('./weak_scaling/data_8e6.csv')
+data_likwid = pd.read_csv('./strong_scaling/data_likwid.csv')
 
 ref_111     = data_ss_111["time"][0]
 ref_222     = data_ss_222["time"][0]
@@ -33,6 +34,14 @@ plt.xlabel('Number of processes')
 plt.ylabel('Speedup')
 plt.grid()
 plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt.plot(data_likwid["processes"], data_likwid["cache miss ratio"], "-ob")
+plt.title("Cache miss ratio")
+plt.xlabel('Number of processes')
+plt.ylabel('Cache miss ratio')
+plt.grid()
 plt.tight_layout()
 plt.show()
 
