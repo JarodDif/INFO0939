@@ -10,3 +10,5 @@ fdtd_*
 data2gmsh/data2gmsh
 # Exclude VSC settings
 .vscode
+# Exclude personnal commands summary
+man.txt

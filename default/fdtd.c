@@ -133,7 +133,7 @@ double trilinear_interpolation(data_t *data, double x, double y, double z) {
       (p0 != NUMNODESZ(data)-1 && i&1)?(p0+1):p0);
   }
 
-  //reduce to cube to square
+  //reduce cube to square
   for(int i=0; i < 4; i++){
     c[i] = c[i] * (1 - dm) + c[i+4] * dm;
   }
@@ -1102,4 +1102,3 @@ void swap_timesteps(simulation_data_t *simdata) {
   simdata->vzold = simdata->vznew;
   simdata->vznew = tmpvz;
 }
-

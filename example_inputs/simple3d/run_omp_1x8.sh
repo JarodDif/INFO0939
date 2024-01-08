@@ -8,6 +8,6 @@
 #SBATCH --partition=batch
 
 module load OpenMPI
-export OMP_NUM_THREADS=8
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 
 srun  ../../omp/fdtd param_3d.txt

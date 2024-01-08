@@ -13,7 +13,6 @@ module load OpenMPI
 
 export OMP_PROC_BIND=true
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-
 export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
 
 scalasca -analyze srun ../../mpi/fdtd param_3d.txt

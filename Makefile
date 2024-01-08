@@ -81,7 +81,7 @@ endif
 ifndef OMP_NUM_THREADS
 	$(error OMP_NUM_THREADS is not defined. Please provide it using 'make run_hybrid NPROCESS=4 OMP_NUM_THREADS=2')
 endif
-	(cd $(EXAMPLE_FOLDER) && mpirun -np $(NPROCESS) ../../$(OUT_MPI) $(PARAM_FILE))
+	(cd $(EXAMPLE_FOLDER) && mpirun -np $(NPROCESS) ../../$(OUT_HYBRID) $(PARAM_FILE))
 
 
 # removes the build programs
