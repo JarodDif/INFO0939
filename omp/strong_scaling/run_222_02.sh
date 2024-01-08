@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name="ss_22202"
 #SBATCH --output="run_22202.out"
-#SBATCH --ntasks=2
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
 #SBATCH --time=00:20:00 # hh:mm:ss
 #SBATCH --mem-per-cpu=10240
 #SBATCH --partition=hmem
