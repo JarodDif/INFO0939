@@ -9,6 +9,5 @@
 
 module load OpenMPI
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
 
-srun  ../../omp/fdtd param_3d.txt
+../../omp/fdtd param_3d.txt
