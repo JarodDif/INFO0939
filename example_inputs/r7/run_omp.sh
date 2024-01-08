@@ -3,7 +3,7 @@
 #SBATCH --output="run_omp.out"
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem-per-cpu=20G
+#SBATCH --mem=20G
 #SBATCH --time=01:00:00
 
 module load OpenMPI
