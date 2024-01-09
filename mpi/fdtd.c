@@ -1021,9 +1021,9 @@ int interpolate_inputmaps(process_simulation_data_t *psimdata, process_grid_t *p
     for (int nbar = 0; nbar < psimgrid->ln.n; nbar++) {
       for (int mbar = 0; mbar < psimgrid->lm.n; mbar++) {
 
-        double x = (mbar + psimgrid->lm.start) * dx;
-        double y = (nbar + psimgrid->ln.start) * dx;
-        double z = (pbar + psimgrid->lp.start) * dx;
+        double x = (mbar + psimgrid->lm.start) * dx + XMIN(cin);
+        double y = (nbar + psimgrid->ln.start) * dx + YMIN(cin);
+        double z = (pbar + psimgrid->lp.start) * dx + ZMIN(cin);
 
         PROCESS_SETVALUE_INSIDE(psimdata->c      , mbar, nbar, pbar, trilinear_interpolation(cin, x,y,z));
         PROCESS_SETVALUE_INSIDE(psimdata->rho    , mbar, nbar, pbar, trilinear_interpolation(rhoin, x,y,z));
